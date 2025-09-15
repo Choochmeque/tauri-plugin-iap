@@ -38,7 +38,7 @@ windows = { version = "0.61", features = [
     "Services_Store",
     "System",
 ] }
-windows-result = "0.3"
+windows-result = "0.4"
 windows-collections = "0.2"
 
 [build-dependencies]
