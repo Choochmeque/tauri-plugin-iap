@@ -22,8 +22,7 @@ pub(crate) async fn purchase<R: Runtime>(
     app: AppHandle<R>,
     payload: PurchaseRequest,
 ) -> Result<Purchase> {
-    app.iap()
-        .purchase(payload.product_id, payload.product_type, payload.options)
+    app.iap().purchase(payload)
 }
 
 #[command]
