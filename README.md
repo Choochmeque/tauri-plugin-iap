@@ -1,9 +1,6 @@
-# ⚠️ WARNING: WORK IS STILL IN PROGRESS. NOT READY FOR PRODUCTION YET
-
 [![NPM Version](https://img.shields.io/npm/v/@choochmeque%2Ftauri-plugin-iap-api)](https://www.npmjs.com/package/@choochmeque/tauri-plugin-iap-api)
 [![Crates.io Version](https://img.shields.io/crates/v/tauri-plugin-iap)](https://crates.io/crates/tauri-plugin-iap)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-
 
 # Tauri Plugin IAP
 
@@ -29,6 +26,7 @@ A Tauri plugin for In-App Purchases (IAP) with support for subscriptions on iOS 
 - **iOS**: StoreKit 2 (requires iOS 15.0+)
 - **Android**: Google Play Billing Library v8.0.0
 - **Windows**: Microsoft Store API (Windows 10/11)
+- **macOS**: Experimental support - might not work correctly (still required some work to do)
 
 ## Installation
 
