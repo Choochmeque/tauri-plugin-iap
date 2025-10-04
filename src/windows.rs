@@ -275,17 +275,14 @@ impl<R: Runtime> Iap<R> {
         })
     }
 
-    pub fn purchase(
-        &self,
-        product_id: String,
-        product_type: String,
-        options: Option<PurchaseOptions>,
-    ) -> crate::Result<Purchase> {
+    pub fn purchase(&self, payload: PurchaseRequest) -> crate::Result<Purchase> {
         let context = self.get_store_context()?;
 
         // Get the product first to ensure it exists
-        let products_response =
-            self.get_products(vec![product_id.clone()], product_type.clone())?;
+        let products_response = self.get_products(
+            vec![payload.product_id.clone()],
+            payload.product_type.clone(),
+        )?;
 
         if products_response.products.is_empty() {
             return Err(crate::Error::PluginInvoke(
@@ -300,12 +297,12 @@ impl<R: Runtime> Iap<R> {
         let product = &products_response.products[0];
         let product_title = product.title.clone();
 
-        let store_id = HSTRING::from(&product_id);
+        let store_id = HSTRING::from(&payload.product_id);
 
         // Create purchase properties if we have an offer token (for subscriptions)
-        let offer_token = options.and_then(|opts| opts.offer_token);
+        let offer_token = payload.options.and_then(|opts| opts.offer_token);
         let purchase_result = if let Some(token) = offer_token {
-            let properties = StorePurchaseProperties::Create(&HSTRING::from(&product_id))?;
+            let properties = StorePurchaseProperties::Create(&HSTRING::from(&payload.product_id))?;
 
             // Set the SKU ID for subscription offers
             properties
