@@ -10,6 +10,7 @@ Default permissions for the plugin
 - `allow-restore-purchases`
 - `allow-get-purchase-history`
 - `allow-acknowledge-purchase`
+- `allow-get-product-status`
 
 ## Permission Table
 
