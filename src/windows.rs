@@ -382,20 +382,20 @@ impl<R: Runtime> Iap<R> {
             })?
             .as_millis() as i64;
 
-        let purchase_token = format!("win_{}_{}", product_id, purchase_time);
+        let purchase_token = format!("win_{}_{}", product.product_id, purchase_time);
 
         Ok(Purchase {
             order_id: Some(purchase_token.clone()),
             package_name: product_title,
-            product_id: product_id.clone(),
+            product_id: product.product_id.clone(),
             purchase_time,
             purchase_token: purchase_token.clone(),
             purchase_state,
-            is_auto_renewing: product_type == "subs",
+            is_auto_renewing: product.product_type == "subs",
             is_acknowledged: true, // Windows Store handles acknowledgment
             original_json: format!(
                 r#"{{"status":{},"message":"{}","productId":"{}"}}"#,
-                status.0, error_message, product_id
+                status.0, error_message, product.product_id
             ),
             signature: String::new(), // Windows doesn't provide signatures like Android
         })
