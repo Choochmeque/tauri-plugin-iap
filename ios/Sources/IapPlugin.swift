@@ -136,8 +136,6 @@ class IapPlugin: Plugin {
                 productsArray.append(productDict)
             }
             
-            Logger.debug("Fetched products: \(productsArray)", category: "iap")
-
             invoke.resolve(["products": productsArray])
         } catch {
             invoke.reject("Failed to fetch products: \(error.localizedDescription)")
