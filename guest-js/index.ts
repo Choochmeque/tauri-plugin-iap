@@ -65,6 +65,7 @@ export interface Purchase {
   isAcknowledged: boolean;
   originalJson: string;
   signature: string;
+  originalId?: string;
 }
 
 /**

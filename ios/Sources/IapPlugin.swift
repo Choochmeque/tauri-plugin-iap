@@ -406,6 +406,7 @@ class IapPlugin: Plugin {
         
         return [
             "orderId": String(transaction.id),
+            "originalId": String(transaction.originalID),
             "packageName": Bundle.main.bundleIdentifier ?? "",
             "productId": transaction.productID,
             "purchaseTime": Int(transaction.purchaseDate.timeIntervalSince1970 * 1000),

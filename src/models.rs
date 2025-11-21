@@ -101,6 +101,7 @@ pub struct Purchase {
     pub is_acknowledged: bool,
     pub original_json: String,
     pub signature: String,
+    pub original_id: Option<String>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
