@@ -34,13 +34,21 @@ export interface SubscriptionOffer {
  * Product information from the app store
  */
 export interface Product {
+  /** Unique product identifier as configured in the app store */
   productId: string;
+  /** Localized product title */
   title: string;
+  /** Localized product description */
   description: string;
+  /** Type of product: "subs" for subscriptions, "inapp" for one-time purchases */
   productType: string;
+  /** Localized price string with currency symbol (e.g., "$9.99") */
   formattedPrice?: string;
+  /** ISO 4217 currency code (e.g., "USD", "EUR") */
   priceCurrencyCode?: string;
+  /** Price in micros (price × 1,000,000). For example, $9.99 = 9990000 */
   priceAmountMicros?: number;
+  /** Subscription offer details including pricing phases. (Android only) */
   subscriptionOfferDetails?: SubscriptionOffer[];
 }
 
@@ -55,16 +63,27 @@ export interface GetProductsResponse {
  * Purchase transaction information
  */
 export interface Purchase {
+  /** Unique order identifier from the store. May be undefined for pending purchases. */
   orderId?: string;
+  /** Application package name (Android) or bundle identifier (iOS/macOS) */
   packageName: string;
+  /** Product identifier that was purchased */
   productId: string;
+  /** Unix timestamp (milliseconds) when the purchase was made */
   purchaseTime: number;
+  /** Token used to identify this purchase for acknowledgment and server-side verification */
   purchaseToken: string;
+  /** Current state of the purchase. See {@link PurchaseState} enum for possible values. */
   purchaseState: number;
+  /** Whether this subscription is set to auto-renew. Always false for one-time purchases. */
   isAutoRenewing: boolean;
+  /** Whether the purchase has been acknowledged. Unacknowledged purchases are refunded after 3 days. (Android only, always true on iOS/macOS) */
   isAcknowledged: boolean;
+  /** Raw JSON response from the store for server-side verification. (Android only) */
   originalJson: string;
+  /** Cryptographic signature for purchase verification. (Android only) */
   signature: string;
+  /** Original transaction ID. Used to link renewals and restores to the original purchase. (iOS/macOS only) */
   originalId?: string;
 }
 
