@@ -84,9 +84,12 @@ tasks.register<JacocoReport>("jacocoTestReport") {
         exclude(fileFilter)
     }
 
-    val mainSrc = "${project.projectDir}/src/main/java"
+    val mainSrc = "${project.projectDir}/src/main"
 
-    sourceDirectories.setFrom(files(mainSrc))
+    sourceDirectories.setFrom(files(listOf(
+        "$mainSrc/java",
+        "$mainSrc/kotlin"
+    )))
     classDirectories.setFrom(files(debugTree))
     executionData.setFrom(fileTree(layout.buildDirectory.get().asFile) {
         include("outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec")
