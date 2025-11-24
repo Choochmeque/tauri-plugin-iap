@@ -1,5 +1,6 @@
 [![NPM Version](https://img.shields.io/npm/v/@choochmeque%2Ftauri-plugin-iap-api)](https://www.npmjs.com/package/@choochmeque/tauri-plugin-iap-api)
 [![Crates.io Version](https://img.shields.io/crates/v/tauri-plugin-iap)](https://crates.io/crates/tauri-plugin-iap)
+[![Tests](https://github.com/Choochmeque/tauri-plugin-iap/actions/workflows/tests.yml/badge.svg)](https://github.com/Choochmeque/tauri-plugin-iap/actions/workflows/tests.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 # Tauri Plugin IAP
