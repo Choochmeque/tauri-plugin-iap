@@ -10,5 +10,5 @@
     "noEmit": true
   },
   "include": ["guest-js/*.ts"],
-  "exclude": ["dist-js", "node_modules"]
+  "exclude": ["dist-js", "node_modules", "**/*.test.ts", "**/*.spec.ts"]
 }
