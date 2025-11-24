@@ -1,0 +1,15 @@
+codecov:
+  require_ci_to_pass: true
+
+coverage:
+  status:
+    project:
+      default:
+        target: auto
+    patch:
+      default:
+        target: auto
+
+ignore:
+  - "android/src/androidTest/**"
+  - "android/src/test/**"
