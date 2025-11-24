@@ -63,6 +63,7 @@
   "settings" : {
     "_applicationInternalID" : "123456789",
     "_developerTeamID" : "XXXXXXXXXX",
+    "_disableDialogs" : true,
     "_failTransactionsEnabled" : false,
     "_locale" : "en_US",
     "_storefront" : "USA",
