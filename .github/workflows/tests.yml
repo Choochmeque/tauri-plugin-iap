@@ -96,7 +96,6 @@ jobs:
           files: ./android/build/reports/jacoco/jacocoTestReport/jacocoTestReport.xml
           flags: android
           name: android-coverage
-          root_dir: ./android
 
       - name: Upload test results
         uses: actions/upload-artifact@v4

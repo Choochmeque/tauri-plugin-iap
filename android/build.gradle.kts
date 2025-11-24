@@ -87,11 +87,7 @@ tasks.register<JacocoReport>("jacocoTestReport") {
 
     sourceDirectories.setFrom(files(listOf(
         "$mainSrc/main/java",
-        "$mainSrc/main/kotlin",
-        "$mainSrc/test/java",
-        "$mainSrc/test/kotlin",
-        "$mainSrc/androidTest/java",
-        "$mainSrc/androidTest/kotlin"
+        "$mainSrc/main/kotlin"
     )))
     classDirectories.setFrom(files(debugTree))
     executionData.setFrom(fileTree(layout.buildDirectory.get().asFile) {
