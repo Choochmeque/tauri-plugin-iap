@@ -29,6 +29,16 @@ jobs:
       - name: Run tests with coverage
         run: pnpm test:coverage
 
+      - name: Upload coverage to Codecov
+        if: ${{ github.actor != 'dependabot[bot]' }}
+        uses: codecov/codecov-action@v5
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        with:
+          files: ./coverage/coverage-final.json
+          flags: javascript
+          name: javascript-coverage
+
       - name: Upload coverage reports
         uses: actions/upload-artifact@v4
         if: always()
@@ -76,6 +86,16 @@ jobs:
         run: |
           cd android
           ./gradlew testDebugUnitTest jacocoTestReport --stacktrace
+
+      - name: Upload coverage to Codecov
+        if: ${{ github.actor != 'dependabot[bot]' }}
+        uses: codecov/codecov-action@v5
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        with:
+          files: ./android/build/reports/jacoco/jacocoTestReport/jacocoTestReport.xml
+          flags: android
+          name: android-coverage
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
