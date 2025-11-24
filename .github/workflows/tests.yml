@@ -26,14 +26,14 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-      - name: Run tests
-        run: pnpm test
+      - name: Run tests with coverage
+        run: pnpm test:coverage
 
-      - name: Upload test results
+      - name: Upload coverage reports
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: js-test-results
+          name: js-coverage
           path: coverage/
 
   test-android:
@@ -72,10 +72,10 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x android/gradlew
 
-      - name: Run Android unit tests
+      - name: Run Android unit tests with coverage
         run: |
           cd android
-          ./gradlew test --stacktrace
+          ./gradlew testDebugUnitTest jacocoTestReport --stacktrace
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
@@ -83,6 +83,13 @@ jobs:
         with:
           name: android-test-results
           path: android/build/test-results/
+
+      - name: Upload coverage reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: android-coverage
+          path: android/build/reports/jacoco/
 
   test-android-instrumented:
     name: Android Instrumented Tests
