@@ -83,11 +83,11 @@ tasks.register<JacocoReport>("jacocoTestReport") {
         exclude(fileFilter)
     }
 
-    val mainSrc = "${project.projectDir}/src/main"
+    val mainSrc = "${project.projectDir}/src"
 
     sourceDirectories.setFrom(files(listOf(
-        "$mainSrc/java",
-        "$mainSrc/kotlin"
+        "$mainSrc/main/java",
+        "$mainSrc/main/kotlin"
     )))
     classDirectories.setFrom(files(debugTree))
     executionData.setFrom(fileTree(layout.buildDirectory.get().asFile) {
