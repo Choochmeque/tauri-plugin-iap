@@ -1,0 +1,195 @@
+{
+  "appPolicies" : {
+    "eula" : "",
+    "policies" : [
+      {
+        "locale" : "en_US",
+        "policyText" : "",
+        "policyURL" : ""
+      }
+    ]
+  },
+  "identifier" : "A1B2C3D4",
+  "nonRenewingSubscriptions" : [
+
+  ],
+  "products" : [
+    {
+      "displayPrice" : "0.99",
+      "familyShareable" : false,
+      "internalID" : "1001",
+      "localizations" : [
+        {
+          "description" : "Remove all ads from the app",
+          "displayName" : "Remove Ads",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "com.test.removeads",
+      "referenceName" : "Remove Ads",
+      "type" : "NonConsumable"
+    },
+    {
+      "displayPrice" : "4.99",
+      "familyShareable" : false,
+      "internalID" : "1002",
+      "localizations" : [
+        {
+          "description" : "Unlock all premium features",
+          "displayName" : "Premium Upgrade",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "com.test.premium",
+      "referenceName" : "Premium Upgrade",
+      "type" : "NonConsumable"
+    },
+    {
+      "displayPrice" : "1.99",
+      "familyShareable" : false,
+      "internalID" : "1003",
+      "localizations" : [
+        {
+          "description" : "100 coins for in-app use",
+          "displayName" : "100 Coins",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "com.test.coins100",
+      "referenceName" : "100 Coins",
+      "type" : "Consumable"
+    }
+  ],
+  "settings" : {
+    "_applicationInternalID" : "123456789",
+    "_developerTeamID" : "XXXXXXXXXX",
+    "_disableDialogs" : true,
+    "_failTransactionsEnabled" : false,
+    "_locale" : "en_US",
+    "_storefront" : "USA",
+    "_storeKitErrors" : [
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Load Products"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Purchase"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Verification"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "App Store Sync"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Subscription Status"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "App Transaction"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Manage Subscriptions Sheet"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Refund Request Sheet"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Offer Code Redeem Sheet"
+      }
+    ]
+  },
+  "subscriptionGroups" : [
+    {
+      "id" : "2001",
+      "localizations" : [
+
+      ],
+      "name" : "Premium Subscriptions",
+      "subscriptions" : [
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "9.99",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "2002",
+          "introductoryOffer" : {
+            "displayPrice" : "0.99",
+            "internalID" : "2003",
+            "numberOfPeriods" : 1,
+            "paymentMode" : "payAsYouGo",
+            "subscriptionPeriod" : "P1M"
+          },
+          "localizations" : [
+            {
+              "description" : "Monthly subscription with all premium features",
+              "displayName" : "Premium Monthly",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "com.test.premium.monthly",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "Premium Monthly",
+          "subscriptionGroupID" : "2001",
+          "type" : "RecurringSubscription",
+          "winbackOffers" : [
+
+          ]
+        },
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
+          "displayPrice" : "99.99",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "2004",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Annual subscription with all premium features",
+              "displayName" : "Premium Annual",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "com.test.premium.annual",
+          "recurringSubscriptionPeriod" : "P1Y",
+          "referenceName" : "Premium Annual",
+          "subscriptionGroupID" : "2001",
+          "type" : "RecurringSubscription",
+          "winbackOffers" : [
+
+          ]
+        }
+      ]
+    }
+  ],
+  "version" : {
+    "major" : 4,
+    "minor" : 0
+  }
+}

@@ -20,26 +20,48 @@ jobs:
       - uses: pnpm/action-setup@v4
         with:
           run_install: false
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v6
         with:
           node-version: "20"
           cache: "pnpm"
       - run: pnpm install
-      - run: pnpm run format-check
+      - run: pnpm run format:check
 
   # Static analyzer.
   clippy:
-    name: cargo-clippy
-    runs-on: ubuntu-latest
+    name: cargo-clippy (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
     steps:
       - uses: awalsh128/cache-apt-pkgs-action@latest
+        if: matrix.os == 'ubuntu-latest'
         with:
           packages: libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf llvm-dev clang cmake grcov
           version: "1.0"  # bump this to invalidate the cache when needed
 
       - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
-      - run: cargo clippy --all-targets --all-features -- -D warnings
+      - run: cargo clippy --all-targets --all-features -- -D warnings -D clippy::unwrap_used
+
+  # Static analyzer for mobile targets.
+  clippy-mobile:
+    name: cargo-clippy (${{ matrix.target }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - target: aarch64-linux-android
+            os: ubuntu-latest
+          - target: aarch64-apple-ios
+            os: macos-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - run: cargo clippy --lib --target ${{ matrix.target }} -- -D warnings -D clippy::unwrap_used
 
   # Check links in the documentation.
   deadlinks:
@@ -70,7 +92,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - uses: streetsidesoftware/cspell-action@v7
+      - uses: streetsidesoftware/cspell-action@v8
         with:
           files: "**/*.{rs,md}"
 

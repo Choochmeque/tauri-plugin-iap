@@ -51,21 +51,9 @@ impl<R: Runtime> Iap<R> {
             .map_err(Into::into)
     }
 
-    pub fn purchase(
-        &self,
-        product_id: String,
-        product_type: String,
-        options: Option<PurchaseOptions>,
-    ) -> crate::Result<Purchase> {
+    pub fn purchase(&self, payload: PurchaseRequest) -> crate::Result<Purchase> {
         self.0
-            .run_mobile_plugin(
-                "purchase",
-                PurchaseRequest {
-                    product_id,
-                    product_type,
-                    options,
-                },
-            )
+            .run_mobile_plugin("purchase", payload)
             .map_err(Into::into)
     }
 

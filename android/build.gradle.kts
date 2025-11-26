@@ -3,26 +3,39 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 plugins {
     id("com.android.library")
     id("org.jetbrains.kotlin.android")
+    id("jacoco")
 }
 
 android {
     namespace = "app.tauri.iap"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
-        minSdk = 21
+        minSdk = 23
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles("consumer-rules.pro")
     }
 
     buildTypes {
+        debug {
+            enableUnitTestCoverage = true
+        }
         release {
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+        }
+    }
+
+    testOptions {
+        unitTests.all {
+            it.configure<JacocoTaskExtension> {
+                isIncludeNoLocationClasses = true
+                excludes = listOf("jdk.internal.*")
+            }
         }
     }
     compileOptions {
@@ -38,12 +51,46 @@ android {
 
 dependencies {
 
-    implementation("androidx.core:core-ktx:1.9.0")
-    implementation("androidx.appcompat:appcompat:1.6.0")
-    implementation("com.google.android.material:material:1.7.0")
-    implementation("com.android.billingclient:billing:8.0.0")
+    implementation("androidx.core:core-ktx:1.17.0")
+    implementation("androidx.appcompat:appcompat:1.7.1")
+    implementation("com.google.android.material:material:1.13.0")
+    implementation("com.android.billingclient:billing:8.1.0")
     testImplementation("junit:junit:4.13.2")
-    androidTestImplementation("androidx.test.ext:junit:1.1.5")
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+    androidTestImplementation("androidx.test.ext:junit:1.3.0")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0")
     implementation(project(":tauri-android"))
+}
+
+tasks.register<JacocoReport>("jacocoTestReport") {
+    dependsOn("testDebugUnitTest")
+
+    reports {
+        xml.required.set(true)
+        html.required.set(true)
+        csv.required.set(false)
+    }
+
+    val fileFilter = listOf(
+        "**/R.class",
+        "**/R$*.class",
+        "**/BuildConfig.*",
+        "**/Manifest*.*",
+        "**/*Test*.*",
+        "android/**/*.*"
+    )
+
+    val debugTree = fileTree("${layout.buildDirectory.get().asFile}/tmp/kotlin-classes/debug") {
+        exclude(fileFilter)
+    }
+
+    val mainSrc = "${project.projectDir}/src"
+
+    sourceDirectories.setFrom(files(listOf(
+        "$mainSrc/main/java",
+        "$mainSrc/main/kotlin"
+    )))
+    classDirectories.setFrom(files(debugTree))
+    executionData.setFrom(fileTree(layout.buildDirectory.get().asFile) {
+        include("outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec")
+    })
 }
