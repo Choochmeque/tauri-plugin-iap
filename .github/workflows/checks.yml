@@ -29,10 +29,14 @@ jobs:
 
   # Static analyzer.
   clippy:
-    name: cargo-clippy
-    runs-on: ubuntu-latest
+    name: cargo-clippy (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
     steps:
       - uses: awalsh128/cache-apt-pkgs-action@latest
+        if: matrix.os == 'ubuntu-latest'
         with:
           packages: libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf llvm-dev clang cmake grcov
           version: "1.0"  # bump this to invalidate the cache when needed
