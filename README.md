@@ -84,7 +84,7 @@ import {
   getProductStatus,
   onPurchaseUpdated,
   PurchaseState
-} from 'tauri-plugin-iap-api';
+} from '@choochmeque/tauri-plugin-iap-api';
 
 // Initialize the billing client
 await initialize();
@@ -128,12 +128,12 @@ const restored = await restorePurchases('subs');
 await acknowledgePurchase(purchaseResult.purchaseToken);
 
 // Listen for purchase updates
-const unlisten = onPurchaseUpdated((purchase) => {
+const listener = await onPurchaseUpdated((purchase) => {
   console.log('Purchase updated:', purchase);
 });
 
 // Stop listening
-unlisten();
+await listener.unregister();
 ```
 
 ## Platform Setup
@@ -223,8 +223,10 @@ Checks the ownership and subscription status of a specific product.
 - `isAcknowledged`: Whether the purchase has been acknowledged
 - `purchaseToken`: Token for the purchase transaction
 
-### `onPurchaseUpdated(callback: (purchase: Purchase) => void)`
+### `onPurchaseUpdated(callback: (purchase: Purchase) => void): Promise<PluginListener>`
 Listens for purchase state changes.
+
+**Returns:** A `PluginListener` object with an `unregister()` method to stop listening.
 
 ## Differences Between Platforms
 
