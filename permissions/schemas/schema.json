@@ -379,6 +379,18 @@
           "markdownDescription": "Denies the register_listener command without any pre-configured scope."
         },
         {
+          "description": "Enables the remove_listener command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-remove-listener",
+          "markdownDescription": "Enables the remove_listener command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the remove_listener command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-remove-listener",
+          "markdownDescription": "Denies the remove_listener command without any pre-configured scope."
+        },
+        {
           "description": "Enables the restore_purchases command without any pre-configured scope.",
           "type": "string",
           "const": "allow-restore-purchases",
@@ -389,6 +401,18 @@
           "type": "string",
           "const": "deny-restore-purchases",
           "markdownDescription": "Denies the restore_purchases command without any pre-configured scope."
+        },
+        {
+          "description": "Enables the unregister_listener command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-unregister-listener",
+          "markdownDescription": "Enables the unregister_listener command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the unregister_listener command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-unregister-listener",
+          "markdownDescription": "Denies the unregister_listener command without any pre-configured scope."
         },
         {
           "description": "Default permissions for the plugin\n#### This default permission set includes:\n\n- `allow-register-listener`\n- `allow-initialize`\n- `allow-get-products`\n- `allow-purchase`\n- `allow-restore-purchases`\n- `allow-get-purchase-history`\n- `allow-acknowledge-purchase`\n- `allow-get-product-status`",

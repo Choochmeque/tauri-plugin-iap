@@ -207,6 +207,32 @@ Denies the register_listener command without any pre-configured scope.
 <tr>
 <td>
 
+`iap:allow-remove-listener`
+
+</td>
+<td>
+
+Enables the remove_listener command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`iap:deny-remove-listener`
+
+</td>
+<td>
+
+Denies the remove_listener command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
 `iap:allow-restore-purchases`
 
 </td>
@@ -226,6 +252,32 @@ Enables the restore_purchases command without any pre-configured scope.
 <td>
 
 Denies the restore_purchases command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`iap:allow-unregister-listener`
+
+</td>
+<td>
+
+Enables the unregister_listener command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`iap:deny-unregister-listener`
+
+</td>
+<td>
+
+Denies the unregister_listener command without any pre-configured scope.
 
 </td>
 </tr>
