@@ -322,8 +322,8 @@ impl<R: Runtime> Iap<R> {
         let status = purchase_result.Status()?;
 
         let purchase_state = match status {
-            StorePurchaseStatus::Succeeded => PurchaseStateValue::Purchased as i32,
-            StorePurchaseStatus::AlreadyPurchased => PurchaseStateValue::Purchased as i32,
+            StorePurchaseStatus::Succeeded => PurchaseStateValue::Purchased,
+            StorePurchaseStatus::AlreadyPurchased => PurchaseStateValue::Purchased,
             StorePurchaseStatus::NotPurchased => {
                 return Err(crate::Error::PluginInvoke(
                     PluginInvokeError::InvokeRejected(ErrorResponse {
@@ -398,6 +398,7 @@ impl<R: Runtime> Iap<R> {
                 status.0, error_message, product.product_id
             ),
             signature: String::new(), // Windows doesn't provide signatures like Android
+            original_id: None, // Windows doesn't have original transaction IDs like iOS/macOS
         })
     }
 
@@ -424,7 +425,7 @@ impl<R: Runtime> Iap<R> {
 
             let purchase = self.convert_license_to_purchase(&license, &product_type)?;
 
-            if purchase.purchase_state == PurchaseStateValue::Purchased as i32 {
+            if purchase.purchase_state == PurchaseStateValue::Purchased {
                 purchases.push(purchase);
             }
 
@@ -465,9 +466,9 @@ impl<R: Runtime> Iap<R> {
         };
 
         let purchase_state = if is_active {
-            PurchaseStateValue::Purchased as i32
+            PurchaseStateValue::Purchased
         } else {
-            PurchaseStateValue::Canceled as i32
+            PurchaseStateValue::Canceled
         };
 
         Ok(Purchase {
@@ -484,6 +485,7 @@ impl<R: Runtime> Iap<R> {
                 is_active, expiration_millis
             ),
             signature: String::new(),
+            original_id: None,
         })
     }
 
