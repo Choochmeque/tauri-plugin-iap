@@ -34,39 +34,9 @@ fn main() {
             println!("cargo:rustc-link-lib=static=tauri-plugin-iap");
             println!(
                 "cargo:rustc-link-search={}",
-                swift_library_static_lib_dir().to_str().unwrap()
-            );
-
-            // Without this we will get warnings about not being able to find dynamic libraries, and then
-            // we won't be able to compile since the Swift static libraries depend on them:
-            // For example:
-            // ld: warning: Could not find or use auto-linked library 'swiftCompatibility51'
-            // ld: warning: Could not find or use auto-linked library 'swiftCompatibility50'
-            // ld: warning: Could not find or use auto-linked library 'swiftCompatibilityDynamicReplacements'
-            // ld: warning: Could not find or use auto-linked library 'swiftCompatibilityConcurrency'
-            let xcode_path = if let Ok(output) = std::process::Command::new("xcode-select")
-                .arg("--print-path")
-                .output()
-            {
-                String::from_utf8(output.stdout.as_slice().into())
-                    .unwrap()
-                    .trim()
-                    .to_string()
-            } else {
-                "/Applications/Xcode.app/Contents/Developer".to_string()
-            };
-            println!(
-            "cargo:rustc-link-search={}/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/macosx/",
-            &xcode_path
-        );
-            println!("cargo:rustc-link-search=/usr/lib/swift");
-
-            let p = "/Library/Developer/CommandLineTools/usr/lib/swift-5.5/macosx";
-            println!("cargo:rustc-link-search=native={p}");
-            println!("cargo:rustc-link-arg=-Wl,-rpath,{p}");
-
-            println!(
-                "cargo:rustc-link-search=/Library/Developer/CommandLineTools/usr/lib/swift-5.5/macosx"
+                swift_library_static_lib_dir()
+                    .to_str()
+                    .expect("Swift library path must be valid UTF-8")
             );
         }
     }
@@ -85,14 +55,18 @@ fn compile_swift() {
         swift_source_dir()
             .join("bridging-header.h")
             .to_str()
-            .unwrap(),
+            .expect("Bridging header path must be valid UTF-8"),
     ]);
 
     if is_release_build() {
         cmd.args(["-c", "release"]);
     }
 
-    let exit_status = cmd.spawn().unwrap().wait_with_output().unwrap();
+    let exit_status = cmd
+        .spawn()
+        .expect("Failed to spawn swift build command")
+        .wait_with_output()
+        .expect("Failed to wait for swift build output");
 
     if !exit_status.status.success() {
         panic!(
@@ -100,8 +74,8 @@ fn compile_swift() {
 Stderr: {}
 Stdout: {}
 "#,
-            String::from_utf8(exit_status.stderr).unwrap(),
-            String::from_utf8(exit_status.stdout).unwrap(),
+            String::from_utf8(exit_status.stderr).expect("Stderr must be valid UTF-8"),
+            String::from_utf8(exit_status.stdout).expect("Stdout must be valid UTF-8"),
         )
     }
 }
@@ -113,13 +87,13 @@ fn swift_bridge_out_dir() -> PathBuf {
 
 #[cfg(all(feature = "unstable", target_os = "macos"))]
 fn manifest_dir() -> PathBuf {
-    let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").unwrap();
+    let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR must be set");
     PathBuf::from(manifest_dir)
 }
 
 #[cfg(all(feature = "unstable", target_os = "macos"))]
 fn is_release_build() -> bool {
-    std::env::var("PROFILE").unwrap() == "release"
+    std::env::var("PROFILE").expect("PROFILE must be set") == "release"
 }
 
 #[cfg(all(feature = "unstable", target_os = "macos"))]
