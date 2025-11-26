@@ -1,9 +1,8 @@
-# ⚠️ WARNING: WORK IS STILL IN PROGRESS. NOT READY FOR PRODUCTION YET
-
 [![NPM Version](https://img.shields.io/npm/v/@choochmeque%2Ftauri-plugin-iap-api)](https://www.npmjs.com/package/@choochmeque/tauri-plugin-iap-api)
 [![Crates.io Version](https://img.shields.io/crates/v/tauri-plugin-iap)](https://crates.io/crates/tauri-plugin-iap)
+[![Tests](https://github.com/Choochmeque/tauri-plugin-iap/actions/workflows/tests.yml/badge.svg)](https://github.com/Choochmeque/tauri-plugin-iap/actions/workflows/tests.yml)
+[![codecov](https://codecov.io/gh/Choochmeque/tauri-plugin-iap/branch/main/graph/badge.svg)](https://codecov.io/gh/Choochmeque/tauri-plugin-iap)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-
 
 # Tauri Plugin IAP
 
@@ -29,6 +28,7 @@ A Tauri plugin for In-App Purchases (IAP) with support for subscriptions on iOS 
 - **iOS**: StoreKit 2 (requires iOS 15.0+)
 - **Android**: Google Play Billing Library v8.0.0
 - **Windows**: Microsoft Store API (Windows 10/11)
+- **macOS**: Experimental support - might not work correctly (still required some work to do)
 
 ## Installation
 
@@ -84,7 +84,7 @@ import {
   getProductStatus,
   onPurchaseUpdated,
   PurchaseState
-} from 'tauri-plugin-iap-api';
+} from '@choochmeque/tauri-plugin-iap-api';
 
 // Initialize the billing client
 await initialize();
@@ -128,12 +128,12 @@ const restored = await restorePurchases('subs');
 await acknowledgePurchase(purchaseResult.purchaseToken);
 
 // Listen for purchase updates
-const unlisten = onPurchaseUpdated((purchase) => {
+const listener = await onPurchaseUpdated((purchase) => {
   console.log('Purchase updated:', purchase);
 });
 
 // Stop listening
-unlisten();
+await listener.unregister();
 ```
 
 ## Platform Setup
@@ -223,8 +223,10 @@ Checks the ownership and subscription status of a specific product.
 - `isAcknowledged`: Whether the purchase has been acknowledged
 - `purchaseToken`: Token for the purchase transaction
 
-### `onPurchaseUpdated(callback: (purchase: Purchase) => void)`
+### `onPurchaseUpdated(callback: (purchase: Purchase) => void): Promise<PluginListener>`
 Listens for purchase state changes.
+
+**Returns:** A `PluginListener` object with an `unregister()` method to stop listening.
 
 ## Differences Between Platforms
 

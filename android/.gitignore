@@ -1,3 +1,5 @@
 /build
 /.tauri
 /.gradle
+/.kotlin
+/local.properties

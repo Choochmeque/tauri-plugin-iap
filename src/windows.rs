@@ -275,17 +275,14 @@ impl<R: Runtime> Iap<R> {
         })
     }
 
-    pub fn purchase(
-        &self,
-        product_id: String,
-        product_type: String,
-        options: Option<PurchaseOptions>,
-    ) -> crate::Result<Purchase> {
+    pub fn purchase(&self, payload: PurchaseRequest) -> crate::Result<Purchase> {
         let context = self.get_store_context()?;
 
         // Get the product first to ensure it exists
-        let products_response =
-            self.get_products(vec![product_id.clone()], product_type.clone())?;
+        let products_response = self.get_products(
+            vec![payload.product_id.clone()],
+            payload.product_type.clone(),
+        )?;
 
         if products_response.products.is_empty() {
             return Err(crate::Error::PluginInvoke(
@@ -300,12 +297,12 @@ impl<R: Runtime> Iap<R> {
         let product = &products_response.products[0];
         let product_title = product.title.clone();
 
-        let store_id = HSTRING::from(&product_id);
+        let store_id = HSTRING::from(&payload.product_id);
 
         // Create purchase properties if we have an offer token (for subscriptions)
-        let offer_token = options.and_then(|opts| opts.offer_token);
+        let offer_token = payload.options.and_then(|opts| opts.offer_token);
         let purchase_result = if let Some(token) = offer_token {
-            let properties = StorePurchaseProperties::Create(&HSTRING::from(&product_id))?;
+            let properties = StorePurchaseProperties::Create(&HSTRING::from(&payload.product_id))?;
 
             // Set the SKU ID for subscription offers
             properties
@@ -325,8 +322,8 @@ impl<R: Runtime> Iap<R> {
         let status = purchase_result.Status()?;
 
         let purchase_state = match status {
-            StorePurchaseStatus::Succeeded => PurchaseStateValue::Purchased as i32,
-            StorePurchaseStatus::AlreadyPurchased => PurchaseStateValue::Purchased as i32,
+            StorePurchaseStatus::Succeeded => PurchaseStateValue::Purchased,
+            StorePurchaseStatus::AlreadyPurchased => PurchaseStateValue::Purchased,
             StorePurchaseStatus::NotPurchased => {
                 return Err(crate::Error::PluginInvoke(
                     PluginInvokeError::InvokeRejected(ErrorResponse {
@@ -385,22 +382,23 @@ impl<R: Runtime> Iap<R> {
             })?
             .as_millis() as i64;
 
-        let purchase_token = format!("win_{}_{}", product_id, purchase_time);
+        let purchase_token = format!("win_{}_{}", product.product_id, purchase_time);
 
         Ok(Purchase {
             order_id: Some(purchase_token.clone()),
             package_name: product_title,
-            product_id: product_id.clone(),
+            product_id: product.product_id.clone(),
             purchase_time,
             purchase_token: purchase_token.clone(),
             purchase_state,
-            is_auto_renewing: product_type == "subs",
+            is_auto_renewing: product.product_type == "subs",
             is_acknowledged: true, // Windows Store handles acknowledgment
             original_json: format!(
                 r#"{{"status":{},"message":"{}","productId":"{}"}}"#,
-                status.0, error_message, product_id
+                status.0, error_message, product.product_id
             ),
             signature: String::new(), // Windows doesn't provide signatures like Android
+            original_id: None, // Windows doesn't have original transaction IDs like iOS/macOS
         })
     }
 
@@ -427,7 +425,7 @@ impl<R: Runtime> Iap<R> {
 
             let purchase = self.convert_license_to_purchase(&license, &product_type)?;
 
-            if purchase.purchase_state == PurchaseStateValue::Purchased as i32 {
+            if purchase.purchase_state == PurchaseStateValue::Purchased {
                 purchases.push(purchase);
             }
 
@@ -468,9 +466,9 @@ impl<R: Runtime> Iap<R> {
         };
 
         let purchase_state = if is_active {
-            PurchaseStateValue::Purchased as i32
+            PurchaseStateValue::Purchased
         } else {
-            PurchaseStateValue::Canceled as i32
+            PurchaseStateValue::Canceled
         };
 
         Ok(Purchase {
@@ -487,6 +485,7 @@ impl<R: Runtime> Iap<R> {
                 is_active, expiration_millis
             ),
             signature: String::new(),
+            original_id: None,
         })
     }
 

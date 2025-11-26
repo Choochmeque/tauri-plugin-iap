@@ -4,12 +4,14 @@ Default permissions for the plugin
 
 #### This default permission set includes the following:
 
+- `allow-register-listener`
 - `allow-initialize`
 - `allow-get-products`
 - `allow-purchase`
 - `allow-restore-purchases`
 - `allow-get-purchase-history`
 - `allow-acknowledge-purchase`
+- `allow-get-product-status`
 
 ## Permission Table
 
@@ -172,6 +174,32 @@ Enables the purchase command without any pre-configured scope.
 <td>
 
 Denies the purchase command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`iap:allow-register-listener`
+
+</td>
+<td>
+
+Enables the register_listener command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`iap:deny-register-listener`
+
+</td>
+<td>
+
+Denies the register_listener command without any pre-configured scope.
 
 </td>
 </tr>

@@ -30,7 +30,16 @@ mod codesign {
             let validity_flags = SecCSFlags(
                 kSecCSCheckAllArchitectures | kSecCSCheckNestedCode | kSecCSStrictValidate,
             );
-            let self_code_ref = self_code_ptr.as_ref().as_ref().unwrap();
+            let self_code_ref = self_code_ptr.as_ref().as_ref().ok_or_else(|| {
+                let error_response = crate::error::ErrorResponse {
+                    code: Some("nullCodeRef".to_string()),
+                    message: Some("Failed to get code reference: null pointer".to_string()),
+                    data: (),
+                };
+                crate::Error::from(crate::error::PluginInvokeError::InvokeRejected(
+                    error_response,
+                ))
+            })?;
             let status = SecCode::check_validity(self_code_ref, validity_flags, None);
             if status != 0 {
                 let error_response = crate::error::ErrorResponse {
@@ -115,16 +124,14 @@ impl<R: Runtime> Iap<R> {
         Self::to_result(ffi::getProducts(product_ids, product_type))
     }
 
-    pub fn purchase(
-        &self,
-        product_id: String,
-        product_type: String,
-        options: Option<PurchaseOptions>,
-    ) -> crate::Result<Purchase> {
+    pub fn purchase(&self, payload: PurchaseRequest) -> crate::Result<Purchase> {
         codesign::is_signature_valid()?;
 
-        let offer_token = options.and_then(|opts| opts.offer_token);
-        Self::to_result(ffi::purchase(product_id, product_type, offer_token))
+        Self::to_result(ffi::purchase(
+            payload.product_id,
+            payload.product_type,
+            payload.options.and_then(|opts| opts.offer_token),
+        ))
     }
 
     pub fn restore_purchases(

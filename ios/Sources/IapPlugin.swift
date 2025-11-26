@@ -32,6 +32,7 @@ class GetProductStatusArgs: Decodable {
     let productType: String?
 }
 
+/// Keep in sync with PurchaseState in guest-js/index.ts
 enum PurchaseStateValue: Int {
     case purchased = 0
     case canceled = 1
@@ -62,21 +63,15 @@ class IapPlugin: Plugin {
         invoke.resolve(["success": true])
     }
     
-    @objc public func getProducts(_ invoke: Invoke) throws {
-        Task {
-            try await self.getProducts(invoke)
-        }
-    }
-
-    public func getProducts(_ invoke: Invoke) async throws {
+    @objc public func getProducts(_ invoke: Invoke) async throws {
         let args = try invoke.parseArgs(GetProductsArgs.self)
-        
+
         do {
             let products = try await Product.products(for: args.productIds)
-            var productsArray: [[String: Any]] = []
-            
+            var productsArray: [JsonObject] = []
+
             for product in products {
-                var productDict: [String: Any] = [
+                var productDict: JsonObject = [
                     "productId": product.id,
                     "title": product.displayName,
                     "description": product.description,
@@ -90,11 +85,11 @@ class IapPlugin: Plugin {
                 // Handle subscription-specific information
                 if product.type == .autoRenewable || product.type == .nonRenewable {
                     if let subscription = product.subscription {
-                        var subscriptionOffers: [[String: Any]] = []
-                        
+                        var subscriptionOffers: [JsonObject] = []
+
                         // Add introductory offer if available
                         if let introOffer = subscription.introductoryOffer {
-                            let offer: [String: Any] = [
+                            let offer: JsonObject = [
                                 "offerToken": "",  // iOS doesn't use offer tokens
                                 "basePlanId": "",
                                 "offerId": introOffer.id ?? "",
@@ -109,9 +104,9 @@ class IapPlugin: Plugin {
                             ]
                             subscriptionOffers.append(offer)
                         }
-                        
+
                         // Add regular subscription info
-                        let regularOffer: [String: Any] = [
+                        let regularOffer: JsonObject = [
                             "offerToken": "",
                             "basePlanId": "",
                             "offerId": "",
@@ -142,13 +137,7 @@ class IapPlugin: Plugin {
         }
     }
     
-    @objc public func purchase(_ invoke: Invoke) throws {
-        Task {
-            try await self.purchase(invoke)
-        }
-    }
-
-    public func purchase(_ invoke: Invoke) async throws {
+    @objc public func purchase(_ invoke: Invoke) async throws {
         let args = try invoke.parseArgs(PurchaseArgs.self)
         
         do {
@@ -203,15 +192,9 @@ class IapPlugin: Plugin {
         }
     }
     
-    @objc public func restorePurchases(_ invoke: Invoke) throws {
-        Task {
-            try await self.restorePurchases(invoke)
-        }
-    }
-
-    public func restorePurchases(_ invoke: Invoke) async throws {
+    @objc public func restorePurchases(_ invoke: Invoke) async throws {
         let args = try? invoke.parseArgs(RestorePurchasesArgs.self)
-        var purchases: [[String: Any]] = []
+        var purchases: [JsonObject] = []
         
         do {
             // Get all current entitlements
@@ -253,21 +236,15 @@ class IapPlugin: Plugin {
         }
     }
 
-    @objc public func getPurchaseHistory(_ invoke: Invoke) throws {
-        Task {
-            try await self.getPurchaseHistory(invoke)
-        }
-    }
-
-    public func getPurchaseHistory(_ invoke: Invoke) async throws {
-        var history: [[String: Any]] = []
+    @objc public func getPurchaseHistory(_ invoke: Invoke) async throws {
+        var history: [JsonObject] = []
         
         do {
             // Get all transactions (including expired ones)
             for await result in Transaction.all {
                 switch result {
                 case .verified(let transaction):
-                    let record: [String: Any] = [
+                    let record: JsonObject = [
                         "productId": transaction.productID,
                         "purchaseTime": Int(transaction.purchaseDate.timeIntervalSince1970 * 1000),
                         "purchaseToken": String(transaction.id),
@@ -292,16 +269,10 @@ class IapPlugin: Plugin {
         invoke.resolve(["success": true])
     }
     
-    @objc public func getProductStatus(_ invoke: Invoke) throws {
-        Task {
-            try await self.getProductStatus(invoke)
-        }
-    }
-
-    public func getProductStatus(_ invoke: Invoke) async throws {
+    @objc public func getProductStatus(_ invoke: Invoke) async throws {
         let args = try invoke.parseArgs(GetProductStatusArgs.self)
-        
-        var statusResult: [String: Any] = [
+
+        var statusResult: JsonObject = [
             "productId": args.productId,
             "isOwned": false
         ]
@@ -388,7 +359,7 @@ class IapPlugin: Plugin {
         }
     }
     
-    private func createPurchaseObject(from transaction: Transaction, product: Product) async -> [String: Any] {
+    private func createPurchaseObject(from transaction: Transaction, product: Product) async -> JsonObject {
         var isAutoRenewing = false
         
         // Check if it's an auto-renewable subscription
@@ -406,11 +377,12 @@ class IapPlugin: Plugin {
         
         return [
             "orderId": String(transaction.id),
+            "originalId": String(transaction.originalID),
             "packageName": Bundle.main.bundleIdentifier ?? "",
             "productId": transaction.productID,
             "purchaseTime": Int(transaction.purchaseDate.timeIntervalSince1970 * 1000),
             "purchaseToken": String(transaction.id),
-            "purchaseState": transaction.revocationDate == nil ? 0 : 1,  // 0 = purchased, 1 = canceled
+            "purchaseState": transaction.revocationDate == nil ? PurchaseStateValue.purchased.rawValue : PurchaseStateValue.canceled.rawValue,
             "isAutoRenewing": isAutoRenewing,
             "isAcknowledged": true,  // Always true on iOS
             "originalJson": "",      // Not available in StoreKit 2
