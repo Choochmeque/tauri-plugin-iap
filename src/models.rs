@@ -96,7 +96,7 @@ pub struct Purchase {
     pub product_id: String,
     pub purchase_time: i64,
     pub purchase_token: String,
-    pub purchase_state: i32,
+    pub purchase_state: PurchaseStateValue,
     pub is_auto_renewing: bool,
     pub is_acknowledged: bool,
     pub original_json: String,
@@ -146,6 +146,7 @@ pub struct AcknowledgePurchaseResponse {
     pub success: bool,
 }
 
+/// Keep in sync with PurchaseState in guest-js/index.ts
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum PurchaseStateValue {
     Purchased = 0,

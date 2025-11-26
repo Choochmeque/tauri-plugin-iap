@@ -1,5 +1,12 @@
 import StoreKit
 
+/// Keep in sync with PurchaseState in guest-js/index.ts
+enum PurchaseStateValue: Int {
+    case purchased = 0
+    case canceled = 1
+    case pending = 2
+}
+
 /// Block the current thread until the async operation finishes.
 /// Safe to call from any thread. If on main thread, keeps the run loop alive.
 @inline(__always)
@@ -269,19 +276,19 @@ func getProductStatusAsync(productId: RustString, productType: RustString) async
                 
                 // Check if expired/revoked
                 if let revocationDate = transaction.revocationDate {
-                    statusResult["purchaseState"] = 1  // canceled
+                    statusResult["purchaseState"] = PurchaseStateValue.canceled.rawValue
                     statusResult["isOwned"] = false
                     statusResult["expirationTime"] = Int(revocationDate.timeIntervalSince1970 * 1000)
                 } else if let expirationDate = transaction.expirationDate {
                     if expirationDate < Date() {
-                        statusResult["purchaseState"] = 1  // canceled
+                        statusResult["purchaseState"] = PurchaseStateValue.canceled.rawValue
                         statusResult["isOwned"] = false
                     } else {
-                        statusResult["purchaseState"] = 0  // purchased
+                        statusResult["purchaseState"] = PurchaseStateValue.purchased.rawValue
                     }
                     statusResult["expirationTime"] = Int(expirationDate.timeIntervalSince1970 * 1000)
                 } else {
-                    statusResult["purchaseState"] = 0  // purchased
+                    statusResult["purchaseState"] = PurchaseStateValue.purchased.rawValue
                 }
 
                 // Check subscription renewal status if it's a subscription
@@ -294,11 +301,11 @@ func getProductStatusAsync(productId: RustString, productType: RustString) async
                                     statusResult["isAutoRenewing"] = true
                                 } else if status.state == .expired {
                                     statusResult["isAutoRenewing"] = false
-                                    statusResult["purchaseState"] = 1  // canceled
+                                    statusResult["purchaseState"] = PurchaseStateValue.canceled.rawValue
                                     statusResult["isOwned"] = false
                                 } else if status.state == .inGracePeriod {
                                     statusResult["isAutoRenewing"] = true
-                                    statusResult["purchaseState"] = 0  // purchased
+                                    statusResult["purchaseState"] = PurchaseStateValue.purchased.rawValue
                                 } else {
                                     statusResult["isAutoRenewing"] = false
                                 }
@@ -372,7 +379,7 @@ private func createPurchaseObject(from transaction: Transaction, product: Produc
         "productId": transaction.productID,
         "purchaseTime": Int(transaction.purchaseDate.timeIntervalSince1970 * 1000),
         "purchaseToken": String(transaction.id),
-        "purchaseState": transaction.revocationDate == nil ? 0 : 1,  // 0 = purchased, 1 = canceled
+        "purchaseState": transaction.revocationDate == nil ? PurchaseStateValue.purchased.rawValue : PurchaseStateValue.canceled.rawValue,
         "isAutoRenewing": isAutoRenewing,
         "isAcknowledged": true,  // Always true on macOS
         "originalJson": "",      // Not available in StoreKit 2

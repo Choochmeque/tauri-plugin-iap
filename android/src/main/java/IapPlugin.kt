@@ -60,10 +60,22 @@ class IapPlugin(private val activity: Activity): Plugin(activity), PurchasesUpda
     private var pendingPurchaseInvoke: Invoke? = null
     private val TAG = "IapPlugin"
     
+    // Keep in sync with PurchaseState in guest-js/index.ts
     companion object {
         const val PURCHASE_STATE_PURCHASED = 0
         const val PURCHASE_STATE_CANCELED = 1
         const val PURCHASE_STATE_PENDING = 2
+
+        fun translatePurchaseState(state: Int): Int = when(state) {
+            Purchase.PurchaseState.PURCHASED -> PURCHASE_STATE_PURCHASED
+            Purchase.PurchaseState.PENDING -> PURCHASE_STATE_PENDING
+            else -> PURCHASE_STATE_CANCELED
+        }
+
+        fun translateProductType(productType: String): String = when(productType) {
+            "inapp" -> BillingClient.ProductType.INAPP
+            else -> BillingClient.ProductType.SUBS
+        }
     }
     
     override fun load(webView: WebView) {
@@ -114,11 +126,7 @@ class IapPlugin(private val activity: Activity): Plugin(activity), PurchasesUpda
             return
         }
         
-        val productType = when (args.productType) {
-            "inapp" -> BillingClient.ProductType.INAPP
-            "subs" -> BillingClient.ProductType.SUBS
-            else -> BillingClient.ProductType.SUBS
-        }
+        val productType = translateProductType(args.productType)
         
         val productList = args.productIds.map { productId ->
             QueryProductDetailsParams.Product.newBuilder()
@@ -197,11 +205,7 @@ class IapPlugin(private val activity: Activity): Plugin(activity), PurchasesUpda
         
         pendingPurchaseInvoke = invoke
         
-        val productType = when (args.productType) {
-            "inapp" -> BillingClient.ProductType.INAPP
-            "subs" -> BillingClient.ProductType.SUBS
-            else -> BillingClient.ProductType.SUBS
-        }
+        val productType = translateProductType(args.productType)
         
         // First, get the product details
         val productList = listOf(
@@ -267,11 +271,7 @@ class IapPlugin(private val activity: Activity): Plugin(activity), PurchasesUpda
             return
         }
         
-        val productType = when (args.productType) {
-            "inapp" -> BillingClient.ProductType.INAPP
-            "subs" -> BillingClient.ProductType.SUBS
-            else -> BillingClient.ProductType.SUBS
-        }
+        val productType = translateProductType(args.productType)
         
         val params = QueryPurchasesParams.newBuilder()
             .setProductType(productType)
@@ -286,14 +286,14 @@ class IapPlugin(private val activity: Activity): Plugin(activity), PurchasesUpda
                         put("productId", purchase.products.firstOrNull() ?: "")
                         put("purchaseTime", purchase.purchaseTime)
                         put("purchaseToken", purchase.purchaseToken)
-                        put("purchaseState", purchase.purchaseState)
+                        put("purchaseState", translatePurchaseState(purchase.purchaseState))
                         put("isAutoRenewing", purchase.isAutoRenewing)
                         put("isAcknowledged", purchase.isAcknowledged)
                         put("originalJson", purchase.originalJson)
                         put("signature", purchase.signature)
                     }
                 }
-                
+
                 val result = JSObject()
                 result.put("purchases", JSONArray(purchasesArray))
                 invoke.resolve(result)
@@ -344,11 +344,7 @@ class IapPlugin(private val activity: Activity): Plugin(activity), PurchasesUpda
             return
         }
         
-        val productType = when (args.productType) {
-            "inapp" -> BillingClient.ProductType.INAPP
-            "subs" -> BillingClient.ProductType.SUBS
-            else -> BillingClient.ProductType.SUBS
-        }
+        val productType = translateProductType(args.productType)
         
         val params = QueryPurchasesParams.newBuilder()
             .setProductType(productType)
@@ -365,11 +361,7 @@ class IapPlugin(private val activity: Activity): Plugin(activity), PurchasesUpda
                     
                     if (productPurchase != null) {
                         put("isOwned", true)
-                        put("purchaseState", when(productPurchase.purchaseState) {
-                            Purchase.PurchaseState.PURCHASED -> PURCHASE_STATE_PURCHASED
-                            Purchase.PurchaseState.PENDING -> PURCHASE_STATE_PENDING
-                            else -> PURCHASE_STATE_CANCELED
-                        })
+                        put("purchaseState", translatePurchaseState(productPurchase.purchaseState))
                         put("purchaseTime", productPurchase.purchaseTime)
                         put("isAutoRenewing", productPurchase.isAutoRenewing)
                         put("isAcknowledged", productPurchase.isAcknowledged)
@@ -417,13 +409,13 @@ class IapPlugin(private val activity: Activity): Plugin(activity), PurchasesUpda
                 put("productId", purchase.products.firstOrNull() ?: "")
                 put("purchaseTime", purchase.purchaseTime)
                 put("purchaseToken", purchase.purchaseToken)
-                put("purchaseState", purchase.purchaseState)
+                put("purchaseState", translatePurchaseState(purchase.purchaseState))
                 put("isAutoRenewing", purchase.isAutoRenewing)
                 put("isAcknowledged", purchase.isAcknowledged)
                 put("originalJson", purchase.originalJson)
                 put("signature", purchase.signature)
             }
-            
+
             pendingPurchaseInvoke?.resolve(purchaseData)
             pendingPurchaseInvoke = null
             

@@ -32,6 +32,7 @@ class GetProductStatusArgs: Decodable {
     let productType: String?
 }
 
+/// Keep in sync with PurchaseState in guest-js/index.ts
 enum PurchaseStateValue: Int {
     case purchased = 0
     case canceled = 1
@@ -381,7 +382,7 @@ class IapPlugin: Plugin {
             "productId": transaction.productID,
             "purchaseTime": Int(transaction.purchaseDate.timeIntervalSince1970 * 1000),
             "purchaseToken": String(transaction.id),
-            "purchaseState": transaction.revocationDate == nil ? 0 : 1,  // 0 = purchased, 1 = canceled
+            "purchaseState": transaction.revocationDate == nil ? PurchaseStateValue.purchased.rawValue : PurchaseStateValue.canceled.rawValue,
             "isAutoRenewing": isAutoRenewing,
             "isAcknowledged": true,  // Always true on iOS
             "originalJson": "",      // Not available in StoreKit 2

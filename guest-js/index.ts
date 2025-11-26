@@ -73,8 +73,8 @@ export interface Purchase {
   purchaseTime: number;
   /** Token used to identify this purchase for acknowledgment and server-side verification */
   purchaseToken: string;
-  /** Current state of the purchase. See {@link PurchaseState} enum for possible values. */
-  purchaseState: number;
+  /** Current state of the purchase. */
+  purchaseState: PurchaseState;
   /** Whether this subscription is set to auto-renew. Always false for one-time purchases. */
   isAutoRenewing: boolean;
   /** Whether the purchase has been acknowledged. Unacknowledged purchases are refunded after 3 days. (Android only, always true on iOS/macOS) */
