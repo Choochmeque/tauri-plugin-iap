@@ -180,6 +180,32 @@ Denies the purchase command without any pre-configured scope.
 <tr>
 <td>
 
+`iap:allow-register-listener`
+
+</td>
+<td>
+
+Enables the register_listener command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`iap:deny-register-listener`
+
+</td>
+<td>
+
+Denies the register_listener command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
 `iap:allow-restore-purchases`
 
 </td>

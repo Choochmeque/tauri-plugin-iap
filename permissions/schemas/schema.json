@@ -367,6 +367,18 @@
           "markdownDescription": "Denies the purchase command without any pre-configured scope."
         },
         {
+          "description": "Enables the register_listener command without any pre-configured scope.",
+          "type": "string",
+          "const": "allow-register-listener",
+          "markdownDescription": "Enables the register_listener command without any pre-configured scope."
+        },
+        {
+          "description": "Denies the register_listener command without any pre-configured scope.",
+          "type": "string",
+          "const": "deny-register-listener",
+          "markdownDescription": "Denies the register_listener command without any pre-configured scope."
+        },
+        {
           "description": "Enables the restore_purchases command without any pre-configured scope.",
           "type": "string",
           "const": "allow-restore-purchases",
