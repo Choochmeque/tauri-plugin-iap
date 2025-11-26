@@ -45,6 +45,24 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - run: cargo clippy --all-targets --all-features -- -D warnings -D clippy::unwrap_used
 
+  # Static analyzer for mobile targets.
+  clippy-mobile:
+    name: cargo-clippy (${{ matrix.target }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - target: aarch64-linux-android
+            os: ubuntu-latest
+          - target: aarch64-apple-ios
+            os: macos-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - run: cargo clippy --lib --target ${{ matrix.target }} -- -D warnings -D clippy::unwrap_used
+
   # Check links in the documentation.
   deadlinks:
     name: cargo-deadlinks
