@@ -22,14 +22,10 @@ import {
 // Mock Tauri API
 vi.mock("@tauri-apps/api/core", () => ({
   invoke: vi.fn(),
+  addPluginListener: vi.fn(),
 }));
 
-vi.mock("@tauri-apps/api/event", () => ({
-  listen: vi.fn(),
-}));
-
-import { invoke } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
+import { invoke, addPluginListener } from "@tauri-apps/api/core";
 
 describe("IAP Plugin", () => {
   beforeEach(() => {
@@ -432,103 +428,64 @@ describe("IAP Plugin", () => {
   });
 
   describe("onPurchaseUpdated", () => {
-    it("should register event listener and return unsubscribe function", () => {
-      const mockUnlisten = vi.fn();
-      vi.mocked(listen).mockResolvedValue(mockUnlisten);
+    const createMockPluginListener = (unregister: () => Promise<void>) => ({
+      plugin: "iap",
+      event: "purchaseUpdated",
+      channelId: 1,
+      unregister,
+    });
 
-      const callback = vi.fn();
-      const unsubscribe = onPurchaseUpdated(callback);
-
-      expect(listen).toHaveBeenCalledWith(
-        "purchaseUpdated",
-        expect.any(Function),
+    it("should register plugin listener and return PluginListener", async () => {
+      const mockUnregister = vi
+        .fn<() => Promise<void>>()
+        .mockResolvedValue(undefined);
+      vi.mocked(addPluginListener).mockResolvedValue(
+        createMockPluginListener(mockUnregister),
       );
-      expect(typeof unsubscribe).toBe("function");
-    });
-
-    it("should call callback with purchase data", async () => {
-      const mockPurchase: Purchase = {
-        orderId: "ORDER123",
-        packageName: "com.example.app",
-        productId: "com.example.premium",
-        purchaseTime: Date.now(),
-        purchaseToken: "TOKEN123",
-        purchaseState: PurchaseState.PURCHASED,
-        isAutoRenewing: true,
-        isAcknowledged: false,
-        originalJson: "{}",
-        signature: "SIG123",
-      };
-
-      let eventCallback: ((event: { payload: Purchase }) => void) | undefined;
-      vi.mocked(listen).mockImplementation((eventName, callback) => {
-        eventCallback = callback as (event: { payload: Purchase }) => void;
-        return Promise.resolve(vi.fn());
-      });
 
       const callback = vi.fn();
-      onPurchaseUpdated(callback);
+      const listener = await onPurchaseUpdated(callback);
 
-      expect(eventCallback).toBeDefined();
-      eventCallback!({ payload: mockPurchase });
-
-      expect(callback).toHaveBeenCalledWith(mockPurchase);
+      expect(addPluginListener).toHaveBeenCalledWith(
+        "iap",
+        "purchaseUpdated",
+        callback,
+      );
+      expect(listener.unregister).toBe(mockUnregister);
     });
 
-    it("should unsubscribe from event when cleanup function is called", async () => {
-      const mockUnlisten = vi.fn();
-      vi.mocked(listen).mockResolvedValue(mockUnlisten);
+    it("should pass callback directly to addPluginListener", async () => {
+      const mockUnregister = vi
+        .fn<() => Promise<void>>()
+        .mockResolvedValue(undefined);
+      vi.mocked(addPluginListener).mockResolvedValue(
+        createMockPluginListener(mockUnregister),
+      );
 
       const callback = vi.fn();
-      const unsubscribe = onPurchaseUpdated(callback);
+      await onPurchaseUpdated(callback);
 
-      await unsubscribe();
-
-      await vi.waitFor(() => {
-        expect(mockUnlisten).toHaveBeenCalled();
-      });
+      expect(addPluginListener).toHaveBeenCalledWith(
+        "iap",
+        "purchaseUpdated",
+        callback,
+      );
     });
 
-    it("should handle multiple purchase updates", async () => {
-      let eventCallback: ((event: { payload: Purchase }) => void) | undefined;
-      vi.mocked(listen).mockImplementation((eventName, callback) => {
-        eventCallback = callback as (event: { payload: Purchase }) => void;
-        return Promise.resolve(vi.fn());
-      });
+    it("should unregister listener when unregister is called", async () => {
+      const mockUnregister = vi
+        .fn<() => Promise<void>>()
+        .mockResolvedValue(undefined);
+      vi.mocked(addPluginListener).mockResolvedValue(
+        createMockPluginListener(mockUnregister),
+      );
 
       const callback = vi.fn();
-      onPurchaseUpdated(callback);
+      const listener = await onPurchaseUpdated(callback);
 
-      const purchase1: Purchase = {
-        packageName: "com.example.app",
-        productId: "product1",
-        purchaseTime: Date.now(),
-        purchaseToken: "TOKEN1",
-        purchaseState: PurchaseState.PENDING,
-        isAutoRenewing: false,
-        isAcknowledged: false,
-        originalJson: "{}",
-        signature: "SIG1",
-      };
+      await listener.unregister();
 
-      const purchase2: Purchase = {
-        packageName: "com.example.app",
-        productId: "product1",
-        purchaseTime: Date.now(),
-        purchaseToken: "TOKEN1",
-        purchaseState: PurchaseState.PURCHASED,
-        isAutoRenewing: false,
-        isAcknowledged: false,
-        originalJson: "{}",
-        signature: "SIG1",
-      };
-
-      eventCallback!({ payload: purchase1 });
-      eventCallback!({ payload: purchase2 });
-
-      expect(callback).toHaveBeenCalledTimes(2);
-      expect(callback).toHaveBeenNthCalledWith(1, purchase1);
-      expect(callback).toHaveBeenNthCalledWith(2, purchase2);
+      expect(mockUnregister).toHaveBeenCalled();
     });
   });
 

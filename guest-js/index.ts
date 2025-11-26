@@ -1,5 +1,8 @@
-import { invoke } from "@tauri-apps/api/core";
-import { listen } from "@tauri-apps/api/event";
+import {
+  invoke,
+  addPluginListener,
+  PluginListener,
+} from "@tauri-apps/api/core";
 
 /**
  * Response from IAP initialization
@@ -347,10 +350,10 @@ export async function getProductStatus(
  * This event is triggered when a purchase state changes.
  *
  * @param callback - Function to call when a purchase is updated
- * @returns Cleanup function to stop listening
+ * @returns Promise resolving to a PluginListener that can be used to stop listening
  * @example
  * ```typescript
- * const unsubscribe = onPurchaseUpdated((purchase) => {
+ * const listener = await onPurchaseUpdated((purchase) => {
  *   console.log(`Purchase updated: ${purchase.productId}`);
  *   if (purchase.purchaseState === PurchaseState.PURCHASED) {
  *     // Handle successful purchase
@@ -358,17 +361,11 @@ export async function getProductStatus(
  * });
  *
  * // Later, stop listening
- * unsubscribe();
+ * await listener.unregister();
  * ```
  */
-export function onPurchaseUpdated(
+export async function onPurchaseUpdated(
   callback: (purchase: Purchase) => void,
-): () => void {
-  const unlisten = listen<Purchase>("purchaseUpdated", (event) => {
-    callback(event.payload);
-  });
-
-  return () => {
-    unlisten.then((fn: () => void) => fn());
-  };
+): Promise<PluginListener> {
+  return await addPluginListener("iap", "purchaseUpdated", callback);
 }
