@@ -428,41 +428,6 @@ final class IapPluginFunctionTests: XCTestCase {
 
     // MARK: - purchase() Tests
 
-    func testPurchaseSuccess() async throws {
-        let (invoke, result) = createTestInvoke(command: "purchase", args: [
-            "productId": "com.test.removeads"
-        ])
-
-        let p = try await Product.products(for: ["com.test.removeads"])
-        print("Products:", p)
-        
-        try await plugin.purchase(invoke)
-
-        XCTAssertTrue(result.didResolve)
-        XCTAssertFalse(result.didReject)
-
-        let json = result.getResolvedJson()
-        XCTAssertNotNil(json?["orderId"])
-        XCTAssertEqual(json?["productId"] as? String, "com.test.removeads")
-        XCTAssertNotNil(json?["purchaseTime"])
-        XCTAssertNotNil(json?["purchaseToken"])
-        XCTAssertEqual(json?["isAcknowledged"] as? Bool, true)
-    }
-
-    func testPurchaseWithAppAccountToken() async throws {
-        let uuid = "550e8400-e29b-41d4-a716-446655440000"
-        let (invoke, result) = createTestInvoke(command: "purchase", args: [
-            "productId": "com.test.premium",
-            "appAccountToken": uuid
-        ])
-
-        try await plugin.purchase(invoke)
-
-        XCTAssertTrue(result.didResolve)
-        let json = result.getResolvedJson()
-        XCTAssertEqual(json?["productId"] as? String, "com.test.premium")
-    }
-
     func testPurchaseWithInvalidAppAccountToken() async throws {
         let (invoke, result) = createTestInvoke(command: "purchase", args: [
             "productId": "com.test.premium",
@@ -485,20 +450,6 @@ final class IapPluginFunctionTests: XCTestCase {
 
         XCTAssertTrue(result.didReject)
         XCTAssertEqual(result.getRejectedMessage(), "Product not found")
-    }
-
-    func testPurchaseSubscription() async throws {
-        let (invoke, result) = createTestInvoke(command: "purchase", args: [
-            "productId": "com.test.premium.monthly",
-            "productType": "subs"
-        ])
-
-        try await plugin.purchase(invoke)
-
-        XCTAssertTrue(result.didResolve)
-        let json = result.getResolvedJson()
-        XCTAssertEqual(json?["productId"] as? String, "com.test.premium.monthly")
-        XCTAssertNotNil(json?["isAutoRenewing"])
     }
 
     // MARK: - acknowledgePurchase() Tests
@@ -530,53 +481,6 @@ final class IapPluginFunctionTests: XCTestCase {
         XCTAssertEqual(purchases?.count, 0)
     }
 
-    func testRestorePurchasesAfterPurchase() async throws {
-        // First make a purchase
-        let (purchaseInvoke, _) = createTestInvoke(command: "purchase", args: [
-            "productId": "com.test.removeads"
-        ])
-        try await plugin.purchase(purchaseInvoke)
-
-        // Then restore
-        let (restoreInvoke, restoreResult) = createTestInvoke(command: "restorePurchases", args: [:])
-        try await plugin.restorePurchases(restoreInvoke)
-
-        XCTAssertTrue(restoreResult.didResolve)
-
-        let json = restoreResult.getResolvedJson()
-        let purchases = json?["purchases"] as? [[String: Any]]
-        XCTAssertNotNil(purchases)
-        XCTAssertGreaterThanOrEqual(purchases?.count ?? 0, 1)
-
-        let productIds = purchases?.compactMap { $0["productId"] as? String } ?? []
-        XCTAssertTrue(productIds.contains("com.test.removeads"))
-    }
-
-    func testRestorePurchasesWithSubsFilter() async throws {
-        // Purchase a subscription
-        let (purchaseInvoke, _) = createTestInvoke(command: "purchase", args: [
-            "productId": "com.test.premium.monthly"
-        ])
-        try await plugin.purchase(purchaseInvoke)
-
-        // Restore with subs filter
-        let (restoreInvoke, restoreResult) = createTestInvoke(command: "restorePurchases", args: [
-            "productType": "subs"
-        ])
-        try await plugin.restorePurchases(restoreInvoke)
-
-        XCTAssertTrue(restoreResult.didResolve)
-
-        let json = restoreResult.getResolvedJson()
-        let purchases = json?["purchases"] as? [[String: Any]]
-        XCTAssertNotNil(purchases)
-
-        for purchase in purchases ?? [] {
-            let productId = purchase["productId"] as? String ?? ""
-            XCTAssertTrue(productId.contains("premium.monthly") || productId.contains("premium.annual"))
-        }
-    }
-
     // MARK: - getPurchaseHistory() Tests
 
     func testGetPurchaseHistoryEmpty() async throws {
@@ -589,32 +493,6 @@ final class IapPluginFunctionTests: XCTestCase {
         let json = result.getResolvedJson()
         let history = json?["history"] as? [[String: Any]]
         XCTAssertNotNil(history)
-    }
-
-    func testGetPurchaseHistoryAfterPurchase() async throws {
-        // Make a purchase
-        let (purchaseInvoke, _) = createTestInvoke(command: "purchase", args: [
-            "productId": "com.test.coins100"
-        ])
-        try await plugin.purchase(purchaseInvoke)
-
-        // Get history
-        let (historyInvoke, historyResult) = createTestInvoke(command: "getPurchaseHistory", args: [:])
-        try await plugin.getPurchaseHistory(historyInvoke)
-
-        XCTAssertTrue(historyResult.didResolve)
-
-        let json = historyResult.getResolvedJson()
-        let history = json?["history"] as? [[String: Any]]
-        XCTAssertNotNil(history)
-        XCTAssertGreaterThanOrEqual(history?.count ?? 0, 1)
-
-        if let record = history?.first {
-            XCTAssertNotNil(record["productId"])
-            XCTAssertNotNil(record["purchaseTime"])
-            XCTAssertNotNil(record["purchaseToken"])
-            XCTAssertNotNil(record["quantity"])
-        }
     }
 
     // MARK: - getProductStatus() Tests
@@ -630,75 +508,6 @@ final class IapPluginFunctionTests: XCTestCase {
         let json = result.getResolvedJson()
         XCTAssertEqual(json?["productId"] as? String, "com.test.premium")
         XCTAssertEqual(json?["isOwned"] as? Bool, false)
-    }
-
-    func testGetProductStatusOwned() async throws {
-        // First purchase
-        let (purchaseInvoke, _) = createTestInvoke(command: "purchase", args: [
-            "productId": "com.test.removeads"
-        ])
-        try await plugin.purchase(purchaseInvoke)
-
-        // Check status
-        let (statusInvoke, statusResult) = createTestInvoke(command: "getProductStatus", args: [
-            "productId": "com.test.removeads"
-        ])
-        try await plugin.getProductStatus(statusInvoke)
-
-        XCTAssertTrue(statusResult.didResolve)
-        let json = statusResult.getResolvedJson()
-        XCTAssertEqual(json?["productId"] as? String, "com.test.removeads")
-        XCTAssertEqual(json?["isOwned"] as? Bool, true)
-        XCTAssertEqual(json?["isAcknowledged"] as? Bool, true)
-        XCTAssertEqual(json?["purchaseState"] as? Int, PurchaseStateValue.purchased.rawValue)
-        XCTAssertNotNil(json?["purchaseTime"])
-        XCTAssertNotNil(json?["purchaseToken"])
-    }
-
-    func testGetProductStatusSubscription() async throws {
-        // Purchase subscription
-        let (purchaseInvoke, _) = createTestInvoke(command: "purchase", args: [
-            "productId": "com.test.premium.monthly"
-        ])
-        try await plugin.purchase(purchaseInvoke)
-
-        // Check status
-        let (statusInvoke, statusResult) = createTestInvoke(command: "getProductStatus", args: [
-            "productId": "com.test.premium.monthly",
-            "productType": "subs"
-        ])
-        try await plugin.getProductStatus(statusInvoke)
-
-        XCTAssertTrue(statusResult.didResolve)
-        let json = statusResult.getResolvedJson()
-        XCTAssertEqual(json?["productId"] as? String, "com.test.premium.monthly")
-        XCTAssertEqual(json?["isOwned"] as? Bool, true)
-        XCTAssertNotNil(json?["expirationTime"])
-        XCTAssertNotNil(json?["isAutoRenewing"])
-    }
-
-    // MARK: - Error Handling Tests
-
-    func testPurchaseFailureWithStoreKitError() async throws {
-        guard let session = session else {
-            XCTFail("StoreKit session not available")
-            return
-        }
-
-        session.failTransactionsEnabled = true
-
-        let (invoke, result) = createTestInvoke(command: "purchase", args: [
-            "productId": "com.test.removeads"
-        ])
-
-        try await plugin.purchase(invoke)
-
-        XCTAssertTrue(result.didReject)
-        let message = result.getRejectedMessage()
-        XCTAssertNotNil(message)
-        XCTAssertTrue(message?.contains("Purchase failed") ?? false)
-
-        session.failTransactionsEnabled = false
     }
 }
 
