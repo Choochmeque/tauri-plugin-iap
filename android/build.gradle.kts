@@ -72,10 +72,5 @@ kover {
                 xmlFile.set(file("coverage.xml"))
             }
         }
-        variant("debugAndroidTest") {
-            xml {
-                xmlFile.set(file("coverage-instrumented.xml"))
-            }
-        }
     }
 }
