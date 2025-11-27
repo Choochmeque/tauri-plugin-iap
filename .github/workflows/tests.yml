@@ -93,7 +93,7 @@ jobs:
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         with:
-          files: ./android/build/reports/jacoco/jacocoTestReport/jacocoTestReport.xml
+          files: ./android/coverage.xml
           flags: android
           name: android-coverage
 
@@ -109,7 +109,7 @@ jobs:
         if: always()
         with:
           name: android-coverage
-          path: android/build/reports/jacoco/
+          path: android/coverage.xml
 
   test-android-instrumented:
     name: Android Instrumented Tests

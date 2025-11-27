@@ -66,7 +66,8 @@ tasks.register<JacocoReport>("jacocoTestReport") {
 
     reports {
         xml.required.set(true)
-        html.required.set(true)
+        xml.outputLocation.set(file("${project.projectDir}/coverage.xml"))
+        html.required.set(false)
         csv.required.set(false)
     }
 
