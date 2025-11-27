@@ -86,7 +86,6 @@ jobs:
         run: |
           cd android
           ./gradlew testDebugUnitTest koverXmlReportDebug --stacktrace
-          sed -i 's|name="src/|name="android/src/|g' coverage.xml
 
       - name: Upload coverage to Codecov
         if: ${{ github.actor != 'dependabot[bot]' }}
