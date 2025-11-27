@@ -77,7 +77,7 @@ jobs:
       - name: Run Android unit tests with coverage
         run: |
           cd android
-          ./gradlew clean testDebugUnitTest createDebugUnitTestCoverageReport --stacktrace
+          ./gradlew clean testDebugUnitTest createDebugUnitTestCoverageReport --stacktrace --no-daemon
 
       - name: Upload coverage to Codecov
         if: ${{ github.actor != 'dependabot[bot]' }}
@@ -147,7 +147,7 @@ jobs:
           profile: pixel_6
           disable-animations: true
           emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
-          script: cd android && ./gradlew clean connectedDebugAndroidTest createDebugAndroidTestCoverageReport --stacktrace
+          script: cd android && ./gradlew clean connectedDebugAndroidTest createDebugAndroidTestCoverageReport --stacktrace --no-daemon
 
       - name: Upload coverage to Codecov
         if: ${{ github.actor != 'dependabot[bot]' }}
