@@ -163,7 +163,18 @@ jobs:
           profile: pixel_6
           disable-animations: true
           emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
-          script: cd android && ./gradlew connectedDebugAndroidTest --stacktrace
+          script: cd android && ./gradlew connectedDebugAndroidTest koverXmlReportDebugAndroidTest --stacktrace
+
+      - name: Upload coverage to Codecov
+        if: ${{ github.actor != 'dependabot[bot]' }}
+        uses: codecov/codecov-action@v5
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        with:
+          files: ./android/coverage-instrumented.xml
+          flags: android-instrumented
+          name: android-instrumented-coverage
+          root_dir: ${{ github.workspace }}
 
       - name: Upload instrumented test results
         uses: actions/upload-artifact@v4
@@ -171,6 +182,13 @@ jobs:
         with:
           name: android-instrumented-test-results
           path: android/build/outputs/androidTest-results/
+
+      - name: Upload instrumented coverage reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: android-instrumented-coverage
+          path: android/coverage-instrumented.xml
 
   test-ios:
     name: iOS Unit Tests

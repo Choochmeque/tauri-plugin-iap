@@ -20,6 +20,7 @@ android {
     buildTypes {
         debug {
             enableUnitTestCoverage = true
+            enableAndroidTestCoverage = true
         }
         release {
             isMinifyEnabled = false
@@ -69,6 +70,11 @@ kover {
         variant("debug") {
             xml {
                 xmlFile.set(file("coverage.xml"))
+            }
+        }
+        variant("debugAndroidTest") {
+            xml {
+                xmlFile.set(file("coverage-instrumented.xml"))
             }
         }
     }
