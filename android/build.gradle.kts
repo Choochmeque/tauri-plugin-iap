@@ -3,7 +3,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 plugins {
     id("com.android.library")
     id("org.jetbrains.kotlin.android")
-    id("jacoco")
+    id("org.jetbrains.kotlinx.kover")
 }
 
 android {
@@ -30,14 +30,6 @@ android {
         }
     }
 
-    testOptions {
-        unitTests.all {
-            it.configure<JacocoTaskExtension> {
-                isIncludeNoLocationClasses = true
-                excludes = listOf("jdk.internal.*")
-            }
-        }
-    }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
@@ -61,37 +53,23 @@ dependencies {
     implementation(project(":tauri-android"))
 }
 
-tasks.register<JacocoReport>("jacocoTestReport") {
-    dependsOn("testDebugUnitTest")
-
+kover {
     reports {
-        xml.required.set(true)
-        xml.outputLocation.set(file("${project.projectDir}/coverage.xml"))
-        html.required.set(false)
-        csv.required.set(false)
+        filters {
+            excludes {
+                classes(
+                    "**/R.class",
+                    "**/R$*.class",
+                    "**/BuildConfig.*",
+                    "**/Manifest*.*",
+                    "**/*Test*.*"
+                )
+            }
+        }
+        variant("debug") {
+            xml {
+                xmlFile.set(file("coverage.xml"))
+            }
+        }
     }
-
-    val fileFilter = listOf(
-        "**/R.class",
-        "**/R$*.class",
-        "**/BuildConfig.*",
-        "**/Manifest*.*",
-        "**/*Test*.*",
-        "android/**/*.*"
-    )
-
-    val debugTree = fileTree("${layout.buildDirectory.get().asFile}/tmp/kotlin-classes/debug") {
-        exclude(fileFilter)
-    }
-
-    val mainSrc = "${project.projectDir}/src"
-
-    sourceDirectories.setFrom(files(listOf(
-        "$mainSrc/main/java",
-        "$mainSrc/main/kotlin"
-    )))
-    classDirectories.setFrom(files(debugTree))
-    executionData.setFrom(fileTree(layout.buildDirectory.get().asFile) {
-        include("outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec")
-    })
 }

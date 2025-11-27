@@ -85,7 +85,7 @@ jobs:
       - name: Run Android unit tests with coverage
         run: |
           cd android
-          ./gradlew testDebugUnitTest jacocoTestReport --stacktrace
+          ./gradlew testDebugUnitTest koverXmlReportDebug --stacktrace
 
       - name: Upload coverage to Codecov
         if: ${{ github.actor != 'dependabot[bot]' }}
