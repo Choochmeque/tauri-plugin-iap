@@ -166,8 +166,7 @@ jobs:
           script: cd android && ./gradlew clean connectedDebugAndroidTest createDebugAndroidTestCoverageReport --stacktrace
 
       - name: Upload coverage to Codecov
-        #if: ${{ github.actor != 'dependabot[bot]' }}
-        if: false
+        if: ${{ github.actor != 'dependabot[bot]' }}
         uses: codecov/codecov-action@v5
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
