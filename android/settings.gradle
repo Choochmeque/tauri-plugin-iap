@@ -13,9 +13,6 @@ pluginManagement {
                 case "org.jetbrains.kotlin.android":
                     useVersion("2.2.21")
                     break
-                case "org.jetbrains.kotlinx.kover":
-                    useVersion("0.9.1")
-                    break
             }
         }
     }

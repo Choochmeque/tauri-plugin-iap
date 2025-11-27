@@ -3,7 +3,6 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 plugins {
     id("com.android.library")
     id("org.jetbrains.kotlin.android")
-    id("org.jetbrains.kotlinx.kover")
 }
 
 android {
@@ -52,25 +51,4 @@ dependencies {
     androidTestImplementation("androidx.test.ext:junit:1.3.0")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0")
     implementation(project(":tauri-android"))
-}
-
-kover {
-    reports {
-        filters {
-            excludes {
-                classes(
-                    "**/R.class",
-                    "**/R$*.class",
-                    "**/BuildConfig.*",
-                    "**/Manifest*.*",
-                    "**/*Test*.*"
-                )
-            }
-        }
-        variant("debug") {
-            xml {
-                xmlFile.set(file("coverage.xml"))
-            }
-        }
-    }
 }

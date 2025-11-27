@@ -85,7 +85,7 @@ jobs:
       - name: Run Android unit tests with coverage
         run: |
           cd android
-          ./gradlew clean testDebugUnitTest koverXmlReportDebug --stacktrace
+          ./gradlew clean testDebugUnitTest createDebugUnitTestCoverageReport --stacktrace
 
       - name: Upload coverage to Codecov
         if: ${{ github.actor != 'dependabot[bot]' }}
@@ -93,7 +93,7 @@ jobs:
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
         with:
-          files: ./android/coverage.xml
+          files: ./android/build/reports/coverage/test/debug/report.xml
           flags: android
           name: android-coverage
           root_dir: ${{ github.workspace }}
@@ -110,7 +110,7 @@ jobs:
         if: always()
         with:
           name: android-coverage
-          path: android/coverage.xml
+          path: android/build/reports/coverage/test/debug/
 
   test-android-instrumented:
     name: Android Instrumented Tests
