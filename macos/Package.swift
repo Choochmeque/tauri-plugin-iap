@@ -24,9 +24,28 @@ let package = Package(
             name: "tauri-plugin-iap",
             dependencies: [ ],
             path: "Sources",
+            swiftSettings: [
+                .unsafeFlags([
+                    "-import-objc-header", "\(Context.packageDirectory)/Sources/bridging-header.h",
+                    "-disable-bridging-pch"
+                ])
+            ],
             linkerSettings: [
                 .linkedFramework("StoreKit")
             ]
-        )
+        ),
+        .testTarget(
+            name: "PluginTests",
+            dependencies: ["tauri-plugin-iap"],
+            resources: [
+                .copy("TestProducts.storekit")
+            ],
+            swiftSettings: [
+                .unsafeFlags([
+                    "-import-objc-header", "\(Context.packageDirectory)/Sources/bridging-header.h",
+                    "-disable-bridging-pch"
+                ])
+            ]
+        ),
     ]
 )
