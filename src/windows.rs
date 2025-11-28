@@ -565,3 +565,89 @@ impl<R: Runtime> Iap<R> {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_datetime_to_unix_millis_epoch() {
+        // Unix epoch: January 1, 1970 00:00:00 UTC
+        // In Windows ticks: 116444736000000000 (100-nanosecond intervals since Jan 1, 1601)
+        let datetime = DateTime {
+            UniversalTime: 116444736000000000,
+        };
+        let result = Iap::<tauri::Wry>::datetime_to_unix_millis(&datetime);
+        assert_eq!(result, 0);
+    }
+
+    #[test]
+    fn test_datetime_to_unix_millis_known_date() {
+        // November 14, 2023 00:00:00 UTC
+        // Unix timestamp: 1699920000000 ms
+        // Windows ticks: 133445856000000000
+        let datetime = DateTime {
+            UniversalTime: 133445856000000000,
+        };
+        let result = Iap::<tauri::Wry>::datetime_to_unix_millis(&datetime);
+        assert_eq!(result, 1699920000000);
+    }
+
+    #[test]
+    fn test_datetime_to_unix_millis_before_epoch() {
+        // Date before Unix epoch should give negative result
+        // January 1, 1969 00:00:00 UTC
+        // Windows ticks: 116413200000000000
+        let datetime = DateTime {
+            UniversalTime: 116413200000000000,
+        };
+        let result = Iap::<tauri::Wry>::datetime_to_unix_millis(&datetime);
+        assert!(result < 0);
+    }
+
+    #[test]
+    fn test_datetime_to_unix_millis_year_2000() {
+        // January 1, 2000 00:00:00 UTC
+        // Unix timestamp: 946684800000 ms
+        // Windows ticks: 125911584000000000
+        let datetime = DateTime {
+            UniversalTime: 125911584000000000,
+        };
+        let result = Iap::<tauri::Wry>::datetime_to_unix_millis(&datetime);
+        assert_eq!(result, 946684800000);
+    }
+
+    #[test]
+    fn test_datetime_to_unix_millis_precision() {
+        // Test that sub-second precision is handled correctly (truncated to seconds then converted to ms)
+        // The function converts to seconds first, losing sub-second precision
+        let datetime = DateTime {
+            UniversalTime: 116444736000000000 + 5000000, // epoch + 500ms in 100-ns ticks
+        };
+        let result = Iap::<tauri::Wry>::datetime_to_unix_millis(&datetime);
+        // Since we divide by WINDOWS_TICK (10_000_000), we truncate sub-second values
+        assert_eq!(result, 0);
+    }
+
+    #[test]
+    fn test_datetime_to_unix_millis_one_second_after_epoch() {
+        // 1 second after Unix epoch
+        let datetime = DateTime {
+            UniversalTime: 116444736000000000 + 10000000, // epoch + 1 second in 100-ns ticks
+        };
+        let result = Iap::<tauri::Wry>::datetime_to_unix_millis(&datetime);
+        assert_eq!(result, 1000);
+    }
+
+    #[test]
+    fn test_datetime_to_unix_millis_far_future() {
+        // January 1, 2100 00:00:00 UTC
+        // Windows ticks: 157766880000000000
+        let datetime = DateTime {
+            UniversalTime: 157766880000000000,
+        };
+        let result = Iap::<tauri::Wry>::datetime_to_unix_millis(&datetime);
+        // Should be approximately 4102444800000 ms
+        assert!(result > 4000000000000);
+    }
+}

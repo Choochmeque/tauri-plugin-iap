@@ -206,3 +206,317 @@ pub struct ProductStatus {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub purchase_token: Option<String>,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_default_product_type() {
+        assert_eq!(default_product_type(), "subs");
+    }
+
+    #[test]
+    fn test_purchase_state_value_serialize() {
+        assert_eq!(
+            serde_json::to_string(&PurchaseStateValue::Purchased)
+                .expect("Failed to serialize Purchased state"),
+            "0"
+        );
+        assert_eq!(
+            serde_json::to_string(&PurchaseStateValue::Canceled)
+                .expect("Failed to serialize Canceled state"),
+            "1"
+        );
+        assert_eq!(
+            serde_json::to_string(&PurchaseStateValue::Pending)
+                .expect("Failed to serialize Pending state"),
+            "2"
+        );
+    }
+
+    #[test]
+    fn test_purchase_state_value_deserialize() {
+        assert_eq!(
+            serde_json::from_str::<PurchaseStateValue>("0")
+                .expect("Failed to deserialize Purchased state"),
+            PurchaseStateValue::Purchased
+        );
+        assert_eq!(
+            serde_json::from_str::<PurchaseStateValue>("1")
+                .expect("Failed to deserialize Canceled state"),
+            PurchaseStateValue::Canceled
+        );
+        assert_eq!(
+            serde_json::from_str::<PurchaseStateValue>("2")
+                .expect("Failed to deserialize Pending state"),
+            PurchaseStateValue::Pending
+        );
+    }
+
+    #[test]
+    fn test_purchase_state_value_deserialize_invalid() {
+        let result = serde_json::from_str::<PurchaseStateValue>("3");
+        assert!(result.is_err());
+        let err = result
+            .expect_err("Expected error for invalid state")
+            .to_string();
+        assert!(err.contains("Invalid purchase state: 3"));
+    }
+
+    #[test]
+    fn test_purchase_state_value_roundtrip() {
+        for state in [
+            PurchaseStateValue::Purchased,
+            PurchaseStateValue::Canceled,
+            PurchaseStateValue::Pending,
+        ] {
+            let serialized =
+                serde_json::to_string(&state).expect("Failed to serialize PurchaseStateValue");
+            let deserialized: PurchaseStateValue = serde_json::from_str(&serialized)
+                .expect("Failed to deserialize PurchaseStateValue");
+            assert_eq!(state, deserialized);
+        }
+    }
+
+    #[test]
+    fn test_initialize_response_default() {
+        let response = InitializeResponse::default();
+        assert!(!response.success);
+    }
+
+    #[test]
+    fn test_initialize_response_serde() {
+        let response = InitializeResponse { success: true };
+        let json =
+            serde_json::to_string(&response).expect("Failed to serialize InitializeResponse");
+        assert_eq!(json, r#"{"success":true}"#);
+
+        let deserialized: InitializeResponse =
+            serde_json::from_str(&json).expect("Failed to deserialize InitializeResponse");
+        assert!(deserialized.success);
+    }
+
+    #[test]
+    fn test_get_products_request_default_product_type() {
+        let json = r#"{"productIds":["product1","product2"]}"#;
+        let request: GetProductsRequest =
+            serde_json::from_str(json).expect("Failed to deserialize GetProductsRequest");
+        assert_eq!(request.product_ids, vec!["product1", "product2"]);
+        assert_eq!(request.product_type, "subs");
+    }
+
+    #[test]
+    fn test_get_products_request_explicit_product_type() {
+        let json = r#"{"productIds":["product1"],"productType":"inapp"}"#;
+        let request: GetProductsRequest =
+            serde_json::from_str(json).expect("Failed to deserialize GetProductsRequest");
+        assert_eq!(request.product_type, "inapp");
+    }
+
+    #[test]
+    fn test_product_optional_fields_skip_serializing() {
+        let product = Product {
+            product_id: "test".to_string(),
+            title: "Test Product".to_string(),
+            description: "A test product".to_string(),
+            product_type: "inapp".to_string(),
+            formatted_price: None,
+            price_currency_code: None,
+            price_amount_micros: None,
+            subscription_offer_details: None,
+        };
+        let json = serde_json::to_string(&product).expect("Failed to serialize Product");
+        assert!(!json.contains("formattedPrice"));
+        assert!(!json.contains("priceCurrencyCode"));
+        assert!(!json.contains("priceAmountMicros"));
+        assert!(!json.contains("subscriptionOfferDetails"));
+    }
+
+    #[test]
+    fn test_product_with_optional_fields() {
+        let product = Product {
+            product_id: "test".to_string(),
+            title: "Test Product".to_string(),
+            description: "A test product".to_string(),
+            product_type: "inapp".to_string(),
+            formatted_price: Some("$9.99".to_string()),
+            price_currency_code: Some("USD".to_string()),
+            price_amount_micros: Some(9990000),
+            subscription_offer_details: None,
+        };
+        let json = serde_json::to_string(&product).expect("Failed to serialize Product");
+        assert!(json.contains(r#""formattedPrice":"$9.99""#));
+        assert!(json.contains(r#""priceCurrencyCode":"USD""#));
+        assert!(json.contains(r#""priceAmountMicros":9990000"#));
+    }
+
+    #[test]
+    fn test_purchase_serde_roundtrip() {
+        let purchase = Purchase {
+            order_id: Some("order123".to_string()),
+            package_name: "com.example.app".to_string(),
+            product_id: "product1".to_string(),
+            purchase_time: 1700000000000,
+            purchase_token: "token123".to_string(),
+            purchase_state: PurchaseStateValue::Purchased,
+            is_auto_renewing: true,
+            is_acknowledged: false,
+            original_json: "{}".to_string(),
+            signature: "sig".to_string(),
+            original_id: None,
+        };
+
+        let json = serde_json::to_string(&purchase).expect("Failed to serialize Purchase");
+        let deserialized: Purchase =
+            serde_json::from_str(&json).expect("Failed to deserialize Purchase");
+
+        assert_eq!(deserialized.order_id, purchase.order_id);
+        assert_eq!(deserialized.product_id, purchase.product_id);
+        assert_eq!(deserialized.purchase_time, purchase.purchase_time);
+        assert_eq!(deserialized.purchase_state, purchase.purchase_state);
+        assert_eq!(deserialized.is_auto_renewing, purchase.is_auto_renewing);
+    }
+
+    #[test]
+    fn test_pricing_phase_serde() {
+        let phase = PricingPhase {
+            formatted_price: "$4.99".to_string(),
+            price_currency_code: "USD".to_string(),
+            price_amount_micros: 4990000,
+            billing_period: "P1M".to_string(),
+            billing_cycle_count: 1,
+            recurrence_mode: 1,
+        };
+
+        let json = serde_json::to_string(&phase).expect("Failed to serialize PricingPhase");
+        assert!(json.contains(r#""formattedPrice":"$4.99""#));
+        assert!(json.contains(r#""billingPeriod":"P1M""#));
+
+        let deserialized: PricingPhase =
+            serde_json::from_str(&json).expect("Failed to deserialize PricingPhase");
+        assert_eq!(deserialized.price_amount_micros, 4990000);
+    }
+
+    #[test]
+    fn test_subscription_offer_serde() {
+        let offer = SubscriptionOffer {
+            offer_token: "token123".to_string(),
+            base_plan_id: "base_plan".to_string(),
+            offer_id: Some("offer1".to_string()),
+            pricing_phases: vec![PricingPhase {
+                formatted_price: "$9.99".to_string(),
+                price_currency_code: "USD".to_string(),
+                price_amount_micros: 9990000,
+                billing_period: "P1M".to_string(),
+                billing_cycle_count: 0,
+                recurrence_mode: 1,
+            }],
+        };
+
+        let json = serde_json::to_string(&offer).expect("Failed to serialize SubscriptionOffer");
+        let deserialized: SubscriptionOffer =
+            serde_json::from_str(&json).expect("Failed to deserialize SubscriptionOffer");
+        assert_eq!(deserialized.offer_token, "token123");
+        assert_eq!(deserialized.pricing_phases.len(), 1);
+    }
+
+    #[test]
+    fn test_purchase_options_flatten() {
+        let json = r#"{"productId":"prod1","offerToken":"token","obfuscatedAccountId":"acc123"}"#;
+        let request: PurchaseRequest =
+            serde_json::from_str(json).expect("Failed to deserialize PurchaseRequest");
+
+        assert_eq!(request.product_id, "prod1");
+        assert_eq!(request.product_type, "subs"); // default
+        let opts = request
+            .options
+            .expect("Expected PurchaseOptions to be present");
+        assert_eq!(opts.offer_token, Some("token".to_string()));
+        assert_eq!(opts.obfuscated_account_id, Some("acc123".to_string()));
+    }
+
+    #[test]
+    fn test_restore_purchases_request_default() {
+        let json = r#"{}"#;
+        let request: RestorePurchasesRequest =
+            serde_json::from_str(json).expect("Failed to deserialize RestorePurchasesRequest");
+        assert_eq!(request.product_type, "subs");
+    }
+
+    #[test]
+    fn test_product_status_optional_fields() {
+        let status = ProductStatus {
+            product_id: "prod1".to_string(),
+            is_owned: false,
+            purchase_state: None,
+            purchase_time: None,
+            expiration_time: None,
+            is_auto_renewing: None,
+            is_acknowledged: None,
+            purchase_token: None,
+        };
+
+        let json = serde_json::to_string(&status).expect("Failed to serialize ProductStatus");
+        // Optional None fields should be skipped
+        assert!(!json.contains("purchaseState"));
+        assert!(!json.contains("purchaseTime"));
+        assert!(!json.contains("expirationTime"));
+    }
+
+    #[test]
+    fn test_product_status_with_values() {
+        let status = ProductStatus {
+            product_id: "prod1".to_string(),
+            is_owned: true,
+            purchase_state: Some(PurchaseStateValue::Purchased),
+            purchase_time: Some(1700000000000),
+            expiration_time: Some(1703000000000),
+            is_auto_renewing: Some(true),
+            is_acknowledged: Some(true),
+            purchase_token: Some("token123".to_string()),
+        };
+
+        let json = serde_json::to_string(&status).expect("Failed to serialize ProductStatus");
+        assert!(json.contains(r#""isOwned":true"#));
+        assert!(json.contains(r#""purchaseState":0"#));
+        assert!(json.contains(r#""isAutoRenewing":true"#));
+    }
+
+    #[test]
+    fn test_acknowledge_purchase_request_serde() {
+        let request = AcknowledgePurchaseRequest {
+            purchase_token: "token123".to_string(),
+        };
+        let json = serde_json::to_string(&request)
+            .expect("Failed to serialize AcknowledgePurchaseRequest");
+        assert_eq!(json, r#"{"purchaseToken":"token123"}"#);
+    }
+
+    #[test]
+    fn test_get_product_status_request_serde() {
+        let json = r#"{"productId":"prod1"}"#;
+        let request: GetProductStatusRequest =
+            serde_json::from_str(json).expect("Failed to deserialize GetProductStatusRequest");
+        assert_eq!(request.product_id, "prod1");
+        assert_eq!(request.product_type, "subs"); // default
+    }
+
+    #[test]
+    fn test_purchase_history_record_serde() {
+        let record = PurchaseHistoryRecord {
+            product_id: "prod1".to_string(),
+            purchase_time: 1700000000000,
+            purchase_token: "token".to_string(),
+            quantity: 1,
+            original_json: "{}".to_string(),
+            signature: "sig".to_string(),
+        };
+
+        let json =
+            serde_json::to_string(&record).expect("Failed to serialize PurchaseHistoryRecord");
+        let deserialized: PurchaseHistoryRecord =
+            serde_json::from_str(&json).expect("Failed to deserialize PurchaseHistoryRecord");
+        assert_eq!(deserialized.quantity, 1);
+    }
+}
