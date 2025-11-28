@@ -5,6 +5,8 @@ Default permissions for the plugin
 #### This default permission set includes the following:
 
 - `allow-register-listener`
+- `allow-unregister-listener`
+- `allow-remove-listener`
 - `allow-initialize`
 - `allow-get-products`
 - `allow-purchase`
