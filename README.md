@@ -6,7 +6,7 @@
 
 # Tauri Plugin IAP
 
-A Tauri plugin for In-App Purchases (IAP) with support for subscriptions on iOS (StoreKit 2), Android (Google Play Billing) and Windows (Microsoft Store).
+A Tauri plugin for In-App Purchases (IAP) with support for subscriptions on iOS (StoreKit 2), Android (Google Play Billing), Windows (Microsoft Store) and macOS (StoreKit 2).
 
 ## Features
 
@@ -248,6 +248,13 @@ Listens for purchase state changes.
 - Supports consumables, durables, and subscriptions
 - Uses SKUs for subscription offer variations
 
+### macOS (StoreKit 2)
+- Same StoreKit 2 API as iOS
+- Automatic transaction verification
+- No manual acknowledgment needed
+- Requires macOS 13.0+
+- App must be code-signed (StoreKit requires valid signature)
+
 ## Testing
 
 ### iOS
@@ -265,6 +272,12 @@ Listens for purchase state changes.
 2. Configure test accounts in Partner Center
 3. Test with Windows Dev Center test payment methods
 4. Ensure app is associated with Store listing
+
+### macOS
+1. Use sandbox test accounts (same as iOS)
+2. Use StoreKit Configuration files for local testing
+3. App must be code-signed to use StoreKit
+4. Clear purchase history in System Settings > App Store > Sandbox Account
 
 ## License
 
