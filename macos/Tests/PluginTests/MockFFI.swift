@@ -800,3 +800,10 @@ func mock_Vec_f64_len(_ vecPtr: UnsafeMutableRawPointer) -> UInt {
 func mock_Vec_f64_as_ptr(_ vecPtr: UnsafeMutableRawPointer) -> UnsafePointer<Double>? {
     return mockVecF64Storage[vecPtr]?.withUnsafeBufferPointer { $0.baseAddress }
 }
+
+// MARK: - Trigger Mock (Rust FFI callback)
+
+@_cdecl("__swift_bridge__$trigger")
+func mock_trigger(_ event: UnsafeMutableRawPointer, _ payload: UnsafeMutableRawPointer) {
+    // No-op stub for tests
+}
