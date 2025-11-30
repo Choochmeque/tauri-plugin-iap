@@ -1,4 +1,5 @@
 use serde::de::DeserializeOwned;
+use tauri::Emitter;
 use tauri::Manager;
 use tauri::{plugin::PluginApi, AppHandle, Runtime};
 use windows::core::{Interface, HSTRING};
@@ -93,6 +94,11 @@ impl<R: Runtime> Iap<R> {
         let seconds_since_1601 = windows_ticks / WINDOWS_TICK;
         let unix_seconds = seconds_since_1601 - SEC_TO_UNIX_EPOCH;
         unix_seconds * 1000 // Convert to milliseconds
+    }
+
+    /// Emit an event to the frontend (equivalent to iOS/Android `trigger` method).
+    fn trigger<S: serde::Serialize + Clone>(&self, event: &str, payload: S) {
+        let _ = self.app_handle.emit(event, payload);
     }
 
     pub fn initialize(&self) -> crate::Result<InitializeResponse> {
@@ -384,7 +390,7 @@ impl<R: Runtime> Iap<R> {
 
         let purchase_token = format!("win_{}_{}", product.product_id, purchase_time);
 
-        Ok(Purchase {
+        let purchase = Purchase {
             order_id: Some(purchase_token.clone()),
             package_name: product_title,
             product_id: product.product_id.clone(),
@@ -399,7 +405,12 @@ impl<R: Runtime> Iap<R> {
             ),
             signature: String::new(), // Windows doesn't provide signatures like Android
             original_id: None, // Windows doesn't have original transaction IDs like iOS/macOS
-        })
+        };
+
+        // Emit event for purchase state change
+        self.trigger("purchaseUpdated", purchase.clone());
+
+        Ok(purchase)
     }
 
     pub fn restore_purchases(
