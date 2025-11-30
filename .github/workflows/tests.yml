@@ -273,7 +273,7 @@ jobs:
           targets: aarch64-apple-darwin
 
       - name: Build macOS bindings
-        run: cargo build --target aarch64-apple-darwin --features unstable
+        run: cargo build --target aarch64-apple-darwin
 
       - name: Run macOS unit tests
         run: |
