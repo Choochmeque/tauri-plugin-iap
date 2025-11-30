@@ -157,9 +157,11 @@ func purchaseAsync(productId: RustString, productType: RustString, offerToken: O
             case .verified(let transaction):
                 // Finish the transaction
                 await transaction.finish()
-                
+
                 let purchase = await createPurchaseObject(from: transaction, product: product)
                 if let jsonString = serializeToJSON(purchase) {
+                    // Emit event for purchase state change
+                    trigger("purchaseUpdated", jsonString)
                     return .Ok(RustString(jsonString))
                 } else {
                     return .Err(RustString("Failed to serialize purchase"))

@@ -1,16 +1,25 @@
 use serde::de::DeserializeOwned;
-use tauri::{plugin::PluginApi, AppHandle, Runtime};
+use std::sync::{mpsc, OnceLock};
+use tauri::{plugin::PluginApi, AppHandle, Emitter, Runtime};
 
 use crate::models::*;
 
+static EVENT_TX: OnceLock<mpsc::Sender<(String, String)>> = OnceLock::new();
+
 mod codesign {
-    use objc2_security::{
-        kSecCSCheckAllArchitectures, kSecCSCheckNestedCode, kSecCSStrictValidate, SecCSFlags,
-        SecCode,
-    };
+    use objc2_security::{kSecCSCheckAllArchitectures, kSecCSCheckNestedCode, SecCSFlags, SecCode};
     use std::ptr::NonNull;
 
     /// Returns `Ok(())` if the running binary is code-signed and valid, otherwise returns an Error.
+    ///
+    /// This validation works for all distribution methods:
+    /// - Development builds (signed with development certificate)
+    /// - TestFlight builds (signed with TestFlight Beta Distribution certificate)
+    /// - App Store builds (signed with App Store distribution certificate)
+    ///
+    /// Note: We intentionally do not use `kSecCSStrictValidate` as it can cause
+    /// validation failures for legitimate App Store and TestFlight builds.
+    /// The flags we use still ensure the code signature is valid and intact.
     pub fn is_signature_valid() -> crate::Result<()> {
         unsafe {
             // 1) Get a handle to "self"
@@ -27,9 +36,9 @@ mod codesign {
             }
 
             // 2) Validate the dynamic code - this checks if the signature is valid
-            let validity_flags = SecCSFlags(
-                kSecCSCheckAllArchitectures | kSecCSCheckNestedCode | kSecCSStrictValidate,
-            );
+            // Using kSecCSCheckAllArchitectures and kSecCSCheckNestedCode ensures thorough
+            // validation without the strict requirements that can fail for App Store/TestFlight builds
+            let validity_flags = SecCSFlags(kSecCSCheckAllArchitectures | kSecCSCheckNestedCode);
             let self_code_ref = self_code_ptr.as_ref().as_ref().ok_or_else(|| {
                 let error_response = crate::error::ErrorResponse {
                     code: Some("nullCodeRef".to_string()),
@@ -64,6 +73,10 @@ mod ffi {
         Err(String), // error message from Swift
     }
 
+    extern "Rust" {
+        fn trigger(event: String, payload: String);
+    }
+
     extern "Swift" {
         fn initialize() -> FFIResult;
         fn getProducts(productIds: Vec<String>, productType: String) -> FFIResult;
@@ -78,10 +91,28 @@ mod ffi {
     }
 }
 
+/// Called by Swift via FFI when transaction updates occur.
+fn trigger(event: String, payload: String) {
+    if let Some(tx) = EVENT_TX.get() {
+        let _ = tx.send((event, payload));
+    }
+}
+
 pub fn init<R: Runtime, C: DeserializeOwned>(
     app: &AppHandle<R>,
     _api: PluginApi<R, C>,
 ) -> crate::Result<Iap<R>> {
+    if EVENT_TX.get().is_none() {
+        let (tx, rx) = mpsc::channel();
+        let _ = EVENT_TX.set(tx);
+
+        let app_handle = app.clone();
+        std::thread::spawn(move || {
+            while let Ok((event, payload)) = rx.recv() {
+                let _ = app_handle.emit(&event, payload);
+            }
+        });
+    }
     Ok(Iap(app.clone()))
 }
 

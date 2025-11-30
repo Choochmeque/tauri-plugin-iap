@@ -1,4 +1,4 @@
-#[cfg(all(feature = "unstable", target_os = "macos"))]
+#[cfg(target_os = "macos")]
 use std::{path::PathBuf, process::Command};
 
 const COMMANDS: &[&str] = &[
@@ -20,7 +20,7 @@ fn main() {
         .ios_path("ios")
         .build();
 
-    #[cfg(all(feature = "unstable", target_os = "macos"))]
+    #[cfg(target_os = "macos")]
     {
         // Only run macOS-specific build steps when building for macOS
         if std::env::var("CARGO_CFG_TARGET_OS").unwrap_or_default() == "macos" {
@@ -28,6 +28,8 @@ fn main() {
             for path in &bridges {
                 println!("cargo:rerun-if-changed={path}");
             }
+
+            println!("cargo:rerun-if-changed=macos/Sources/IapPlugin.swift");
 
             swift_bridge_build::parse_bridges(bridges)
                 .write_all_concatenated(swift_bridge_out_dir(), env!("CARGO_PKG_NAME"));
@@ -45,7 +47,7 @@ fn main() {
     }
 }
 
-#[cfg(all(feature = "unstable", target_os = "macos"))]
+#[cfg(target_os = "macos")]
 fn compile_swift() {
     let swift_package_dir = manifest_dir().join("macos");
 
@@ -83,33 +85,33 @@ Stdout: {}
     }
 }
 
-#[cfg(all(feature = "unstable", target_os = "macos"))]
+#[cfg(target_os = "macos")]
 fn swift_bridge_out_dir() -> PathBuf {
     generated_code_dir()
 }
 
-#[cfg(all(feature = "unstable", target_os = "macos"))]
+#[cfg(target_os = "macos")]
 fn manifest_dir() -> PathBuf {
     let manifest_dir = std::env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR must be set");
     PathBuf::from(manifest_dir)
 }
 
-#[cfg(all(feature = "unstable", target_os = "macos"))]
+#[cfg(target_os = "macos")]
 fn is_release_build() -> bool {
     std::env::var("PROFILE").expect("PROFILE must be set") == "release"
 }
 
-#[cfg(all(feature = "unstable", target_os = "macos"))]
+#[cfg(target_os = "macos")]
 fn swift_source_dir() -> PathBuf {
     manifest_dir().join("macos/Sources")
 }
 
-#[cfg(all(feature = "unstable", target_os = "macos"))]
+#[cfg(target_os = "macos")]
 fn generated_code_dir() -> PathBuf {
     swift_source_dir().join("generated")
 }
 
-#[cfg(all(feature = "unstable", target_os = "macos"))]
+#[cfg(target_os = "macos")]
 fn swift_library_static_lib_dir() -> PathBuf {
     let debug_or_release = if is_release_build() {
         "release"

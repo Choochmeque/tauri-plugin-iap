@@ -5,12 +5,9 @@ use tauri::{
 
 pub use models::*;
 
-#[cfg(any(
-    target_os = "linux",
-    all(target_os = "macos", not(feature = "unstable"))
-))]
+#[cfg(target_os = "linux")]
 mod desktop;
-#[cfg(all(target_os = "macos", feature = "unstable"))]
+#[cfg(target_os = "macos")]
 mod macos;
 #[cfg(mobile)]
 mod mobile;
@@ -23,12 +20,9 @@ mod models;
 
 pub use error::{Error, Result};
 
-#[cfg(any(
-    target_os = "linux",
-    all(target_os = "macos", not(feature = "unstable"))
-))]
+#[cfg(target_os = "linux")]
 use desktop::Iap;
-#[cfg(all(target_os = "macos", feature = "unstable"))]
+#[cfg(target_os = "macos")]
 use macos::Iap;
 #[cfg(mobile)]
 use mobile::Iap;
@@ -58,16 +52,13 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
             commands::get_product_status,
         ])
         .setup(|app, api| {
-            #[cfg(all(target_os = "macos", feature = "unstable"))]
+            #[cfg(target_os = "macos")]
             let iap = macos::init(app, api)?;
             #[cfg(mobile)]
             let iap = mobile::init(app, api)?;
             #[cfg(target_os = "windows")]
             let iap = windows::init(app, api)?;
-            #[cfg(any(
-                target_os = "linux",
-                all(target_os = "macos", not(feature = "unstable"))
-            ))]
+            #[cfg(target_os = "linux")]
             let iap = desktop::init(app, api)?;
             app.manage(iap);
             Ok(())
