@@ -71,7 +71,7 @@ jobs:
           name: javascript-coverage
 
       - name: Upload coverage reports
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: js-coverage
@@ -122,14 +122,14 @@ jobs:
           root_dir: ${{ github.workspace }}
 
       - name: Upload test results
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: android-test-results
           path: android/build/test-results/
 
       - name: Upload coverage reports
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: android-coverage
@@ -192,14 +192,14 @@ jobs:
           root_dir: ${{ github.workspace }}
 
       - name: Upload instrumented test results
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: android-instrumented-test-results
           path: android/build/outputs/androidTest-results/
 
       - name: Upload instrumented coverage reports
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: android-instrumented-coverage
@@ -246,14 +246,14 @@ jobs:
           name: ios-coverage
 
       - name: Upload test results
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: ios-test-results
           path: ios/TestResults.xcresult
 
       - name: Upload coverage reports
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: ios-coverage
@@ -300,14 +300,14 @@ jobs:
           name: macos-coverage
 
       - name: Upload test results
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: macos-test-results
           path: macos/TestResults.xcresult
 
       - name: Upload coverage reports
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: macos-coverage
