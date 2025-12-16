@@ -20,7 +20,7 @@ impl<R: Runtime> Iap<R> {
         )))
     }
 
-    pub fn get_products(
+    pub async fn get_products(
         &self,
         _product_ids: Vec<String>,
         _product_type: String,
@@ -30,7 +30,7 @@ impl<R: Runtime> Iap<R> {
         )))
     }
 
-    pub fn purchase(&self, _payload: PurchaseRequest) -> crate::Result<Purchase> {
+    pub async fn purchase(&self, _payload: PurchaseRequest) -> crate::Result<Purchase> {
         Err(crate::Error::from(std::io::Error::other(
             "IAP is not supported on this platform",
         )))

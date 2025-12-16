@@ -155,14 +155,17 @@ impl<R: Runtime> Iap<R> {
         Self::to_result(ffi::getProducts(product_ids, product_type).await)
     }
 
-    pub fn purchase(&self, payload: PurchaseRequest) -> crate::Result<Purchase> {
+    pub async fn purchase(&self, payload: PurchaseRequest) -> crate::Result<Purchase> {
         codesign::is_signature_valid()?;
 
-        Self::to_result(ffi::purchase(
-            payload.product_id,
-            payload.product_type,
-            payload.options.and_then(|opts| opts.offer_token),
-        ))
+        Self::to_result(
+            ffi::purchase(
+                payload.product_id,
+                payload.product_type,
+                payload.options.and_then(|opts| opts.offer_token),
+            )
+            .await,
+        )
     }
 
     pub fn restore_purchases(
