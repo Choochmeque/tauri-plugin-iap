@@ -415,7 +415,7 @@ impl<R: Runtime> Iap<R> {
         Ok(purchase)
     }
 
-    pub fn restore_purchases(
+    pub async fn restore_purchases(
         &self,
         product_type: String,
     ) -> crate::Result<RestorePurchasesResponse> {
@@ -511,7 +511,7 @@ impl<R: Runtime> Iap<R> {
         Ok(AcknowledgePurchaseResponse { success: true })
     }
 
-    pub fn get_product_status(
+    pub async fn get_product_status(
         &self,
         product_id: String,
         product_type: String,
