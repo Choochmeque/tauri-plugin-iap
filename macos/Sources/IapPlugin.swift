@@ -48,14 +48,7 @@ public func initialize() -> FFIResult {
     }
 }
 
-public func getProducts(productIds: RustVec<RustString>, productType: RustString) -> FFIResult {
-    blockOn {
-        await getProductsAsync(productIds: productIds, productType: productType)
-    }
-}
-
-@MainActor
-func getProductsAsync(productIds: RustVec<RustString>, productType: RustString) async -> FFIResult {
+func getProducts(productIds: RustVec<RustString>, productType: RustString) async -> FFIResult {
     do {
         let ids: [String] = productIds.map { $0.as_str().toString() }
         let products = try await Product.products(for: ids)
@@ -196,48 +189,44 @@ func restorePurchasesAsync(productType: RustString) async -> FFIResult {
     var purchases: [[String: Any]] = []
     let requestedType = productType.as_str().toString()
     
-    do {
-        // Get all current entitlements
-        for await result in Transaction.currentEntitlements {
-            switch result {
-            case .verified(let transaction):
-                if let product = try? await Product.products(for: [transaction.productID]).first {
-                    // Filter by product type if specified
-                    if !requestedType.isEmpty {
-                        let productTypeMatches: Bool
-                        switch requestedType {
-                        case "subs":
-                            productTypeMatches = (product.type == .autoRenewable || product.type == .nonRenewable)
-                        case "inapp":
-                            productTypeMatches = (product.type == .consumable || product.type == .nonConsumable)
-                        default:
-                            productTypeMatches = true
-                        }
-                        
-                        if productTypeMatches {
-                            let purchase = await createPurchaseObject(from: transaction, product: product)
-                            purchases.append(purchase)
-                        }
-                    } else {
-                        // No filter, include all
+    // Get all current entitlements
+    for await result in Transaction.currentEntitlements {
+        switch result {
+        case .verified(let transaction):
+            if let product = try? await Product.products(for: [transaction.productID]).first {
+                // Filter by product type if specified
+                if !requestedType.isEmpty {
+                    let productTypeMatches: Bool
+                    switch requestedType {
+                    case "subs":
+                        productTypeMatches = (product.type == .autoRenewable || product.type == .nonRenewable)
+                    case "inapp":
+                        productTypeMatches = (product.type == .consumable || product.type == .nonConsumable)
+                    default:
+                        productTypeMatches = true
+                    }
+                    
+                    if productTypeMatches {
                         let purchase = await createPurchaseObject(from: transaction, product: product)
                         purchases.append(purchase)
                     }
+                } else {
+                    // No filter, include all
+                    let purchase = await createPurchaseObject(from: transaction, product: product)
+                    purchases.append(purchase)
                 }
-            case .unverified(_, _):
-                // Skip unverified transactions
-                continue
             }
+        case .unverified(_, _):
+            // Skip unverified transactions
+            continue
         }
-        
-        let json: [String: Any] = ["purchases": purchases]
-        if let jsonString = serializeToJSON(json) {
-            return .Ok(RustString(jsonString))
-        } else {
-            return .Err(RustString("Failed to serialize purchases"))
-        }
-    } catch {
-        return .Err(RustString("Failed to restore purchases: \(error.localizedDescription)"))
+    }
+    
+    let json: [String: Any] = ["purchases": purchases]
+    if let jsonString = serializeToJSON(json) {
+        return .Ok(RustString(jsonString))
+    } else {
+        return .Err(RustString("Failed to serialize purchases"))
     }
 }
 

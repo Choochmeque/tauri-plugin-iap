@@ -14,7 +14,7 @@ pub(crate) async fn get_products<R: Runtime>(
     payload: GetProductsRequest,
 ) -> Result<GetProductsResponse> {
     app.iap()
-        .get_products(payload.product_ids, payload.product_type)
+        .get_products(payload.product_ids, payload.product_type).await
 }
 
 #[command]

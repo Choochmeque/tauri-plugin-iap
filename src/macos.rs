@@ -79,7 +79,7 @@ mod ffi {
 
     extern "Swift" {
         fn initialize() -> FFIResult;
-        fn getProducts(productIds: Vec<String>, productType: String) -> FFIResult;
+        async fn getProducts(productIds: Vec<String>, productType: String) -> FFIResult;
         fn purchase(
             productId: String,
             productType: String,
@@ -145,14 +145,14 @@ impl<R: Runtime> Iap<R> {
         Self::to_result(ffi::initialize())
     }
 
-    pub fn get_products(
+    pub async fn get_products(
         &self,
         product_ids: Vec<String>,
         product_type: String,
     ) -> crate::Result<GetProductsResponse> {
         codesign::is_signature_valid()?;
 
-        Self::to_result(ffi::getProducts(product_ids, product_type))
+        Self::to_result(ffi::getProducts(product_ids, product_type).await)
     }
 
     pub fn purchase(&self, payload: PurchaseRequest) -> crate::Result<Purchase> {
