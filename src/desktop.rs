@@ -36,7 +36,7 @@ impl<R: Runtime> Iap<R> {
         )))
     }
 
-    pub fn restore_purchases(
+    pub async fn restore_purchases(
         &self,
         _product_type: String,
     ) -> crate::Result<RestorePurchasesResponse> {
@@ -60,7 +60,7 @@ impl<R: Runtime> Iap<R> {
         )))
     }
 
-    pub fn get_product_status(
+    pub async fn get_product_status(
         &self,
         _product_id: String,
         _product_type: String,

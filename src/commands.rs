@@ -31,7 +31,7 @@ pub(crate) async fn restore_purchases<R: Runtime>(
     app: AppHandle<R>,
     payload: RestorePurchasesRequest,
 ) -> Result<RestorePurchasesResponse> {
-    app.iap().restore_purchases(payload.product_type)
+    app.iap().restore_purchases(payload.product_type).await
 }
 
 #[command]
@@ -49,4 +49,5 @@ pub(crate) async fn get_product_status<R: Runtime>(
 ) -> Result<ProductStatus> {
     app.iap()
         .get_product_status(payload.product_id, payload.product_type)
+        .await
 }

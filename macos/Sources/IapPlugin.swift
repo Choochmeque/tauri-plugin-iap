@@ -7,29 +7,6 @@ enum PurchaseStateValue: Int {
     case pending = 2
 }
 
-/// Block the current thread until the async operation finishes.
-/// Safe to call from any thread. If on main thread, keeps the run loop alive.
-@inline(__always)
-func blockOn<T>(_ op: @escaping () async -> T) -> T {
-    var out: T?
-    let sem = DispatchSemaphore(value: 0)
-
-    Task.detached {
-        out = await op()
-        sem.signal()
-    }
-
-    if Thread.isMainThread {
-        // Keep UI responsive while we wait
-        while out == nil {
-            RunLoop.current.run(mode: .default, before: Date(timeIntervalSinceNow: 0.002))
-        }
-    } else {
-        sem.wait()
-    }
-    return out!
-}
-
 private func serializeToJSON(_ object: [String: Any]) -> String? {
     guard let data = try? JSONSerialization.data(withJSONObject: object),
           let jsonString = String(data: data, encoding: .utf8) else {
@@ -126,14 +103,7 @@ func getProducts(productIds: RustVec<RustString>, productType: RustString) async
     }
 }
 
-public func purchase(productId: RustString, productType: RustString, offerToken: Optional<RustString>) -> FFIResult {
-    blockOn {
-        await purchaseAsync(productId: productId, productType: productType, offerToken: offerToken)
-    }
-}
-
-@MainActor
-func purchaseAsync(productId: RustString, productType: RustString, offerToken: Optional<RustString>) async -> FFIResult {
+func purchase(productId: RustString, productType: RustString, offerToken: Optional<RustString>) async -> FFIResult {
     do {
         let id = productId.as_str().toString()
         let products = try await Product.products(for: [id])
@@ -178,14 +148,7 @@ func purchaseAsync(productId: RustString, productType: RustString, offerToken: O
     }
 }
 
-public func restorePurchases(productType: RustString) -> FFIResult {
-    blockOn {
-        await restorePurchasesAsync(productType: productType)
-    }
-}
-
-@MainActor
-func restorePurchasesAsync(productType: RustString) async -> FFIResult {
+func restorePurchases(productType: RustString) async -> FFIResult {
     var purchases: [[String: Any]] = []
     let requestedType = productType.as_str().toString()
     
@@ -240,14 +203,7 @@ public func acknowledgePurchase(purchaseToken: RustString) -> FFIResult {
     }
 }
 
-public func getProductStatus(productId: RustString, productType: RustString) -> FFIResult {
-    blockOn {
-        await getProductStatusAsync(productId: productId, productType: productType)
-    }
-}
-
-@MainActor
-func getProductStatusAsync(productId: RustString, productType: RustString) async -> FFIResult {
+func getProductStatus(productId: RustString, productType: RustString) async -> FFIResult {
     let id = productId.as_str().toString()
     
     var statusResult: [String: Any] = [

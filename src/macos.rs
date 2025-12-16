@@ -80,14 +80,14 @@ mod ffi {
     extern "Swift" {
         fn initialize() -> FFIResult;
         async fn getProducts(productIds: Vec<String>, productType: String) -> FFIResult;
-        fn purchase(
+        async fn purchase(
             productId: String,
             productType: String,
             offerToken: Option<String>,
         ) -> FFIResult;
-        fn restorePurchases(productType: String) -> FFIResult;
+        async fn restorePurchases(productType: String) -> FFIResult;
         fn acknowledgePurchase(purchaseToken: String) -> FFIResult;
-        fn getProductStatus(productId: String, productType: String) -> FFIResult;
+        async fn getProductStatus(productId: String, productType: String) -> FFIResult;
     }
 }
 
@@ -168,13 +168,13 @@ impl<R: Runtime> Iap<R> {
         )
     }
 
-    pub fn restore_purchases(
+    pub async fn restore_purchases(
         &self,
         product_type: String,
     ) -> crate::Result<RestorePurchasesResponse> {
         codesign::is_signature_valid()?;
 
-        Self::to_result(ffi::restorePurchases(product_type))
+        Self::to_result(ffi::restorePurchases(product_type).await)
     }
 
     pub fn acknowledge_purchase(
@@ -186,13 +186,13 @@ impl<R: Runtime> Iap<R> {
         Self::to_result(ffi::acknowledgePurchase(purchase_token))
     }
 
-    pub fn get_product_status(
+    pub async fn get_product_status(
         &self,
         product_id: String,
         product_type: String,
     ) -> crate::Result<ProductStatus> {
         codesign::is_signature_valid()?;
 
-        Self::to_result(ffi::getProductStatus(product_id, product_type))
+        Self::to_result(ffi::getProductStatus(product_id, product_type).await)
     }
 }
