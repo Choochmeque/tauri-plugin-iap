@@ -5,130 +5,77 @@ import StoreKitTest
 
 // MARK: - Test Helpers
 
-private func isResultOk(_ result: FFIResult) -> Bool {
-    if case .Ok = result { return true }
-    return false
-}
-
-private func getResultString(_ result: FFIResult) -> String? {
-    switch result {
-    case .Ok(let rustString):
-        return rustString.toString()
-    case .Err:
+/// Parses a JSON string into a dictionary.
+private func parseJSON(_ jsonString: String) -> JsonObject? {
+    guard let data = jsonString.data(using: .utf8),
+          let json = try? JSONSerialization.jsonObject(with: data) as? JsonObject else {
         return nil
     }
+    return json
 }
 
-// Helper to avoid name conflict with XCTestCase.initialize
-private func pluginInitialize() -> FFIResult { tauri_plugin_iap.initialize() }
-private func pluginAcknowledgePurchase(purchaseToken: RustString) -> FFIResult { tauri_plugin_iap.acknowledgePurchase(purchaseToken: purchaseToken) }
+/// Wrapper to avoid name conflict with XCTestCase.initialize
+private func pluginInitialize() throws -> String {
+    try tauri_plugin_iap.initialize()
+}
 
 final class PluginTests: XCTestCase {
-    
+
     // MARK: - PurchaseStateValue Tests
-    
+
     func testPurchaseStateValueRawValues() {
         XCTAssertEqual(PurchaseStateValue.purchased.rawValue, 0)
         XCTAssertEqual(PurchaseStateValue.canceled.rawValue, 1)
         XCTAssertEqual(PurchaseStateValue.pending.rawValue, 2)
     }
-    
-    // MARK: - Plugin Function Tests
-    
-    func testPluginInitialize() {
-        let result = pluginInitialize()
-        XCTAssertTrue(isResultOk(result))
-        
-        if let jsonString = getResultString(result),
-           let data = jsonString.data(using: String.Encoding.utf8),
-           let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
-            XCTAssertEqual(json["success"] as? Bool, true)
-        } else {
-            XCTFail("Failed to parse initialize response")
-        }
-    }
-    
-    func testAcknowledgePurchase() {
-        // acknowledgePurchase is a no-op on macOS, should always succeed
-        let result = pluginAcknowledgePurchase(purchaseToken: RustString("test_token"))
-        XCTAssertTrue(isResultOk(result))
-        
-        if let jsonString = getResultString(result),
-           let data = jsonString.data(using: String.Encoding.utf8),
-           let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
-            XCTAssertEqual(json["success"] as? Bool, true)
-        } else {
-            XCTFail("Failed to parse acknowledgePurchase response")
-        }
-    }
-    
-    // MARK: - JSON Serialization Tests
-    
-    func testSerializeToJSONWithProducts() {
-        // Test that our mock infrastructure allows testing JSON responses
-        let result = pluginInitialize()
-        guard case .Ok(let rustString) = result else {
-            XCTFail("Expected Ok result")
-            return
-        }
-        
-        let jsonString = rustString.toString()
-        XCTAssertFalse(jsonString.isEmpty)
-        XCTAssertTrue(jsonString.contains("success"))
-    }
-    
-    // MARK: - PurchaseStateValue Advanced Tests
-    
+
     func testPurchaseStateValueFromRawValue() {
         XCTAssertEqual(PurchaseStateValue(rawValue: 0), .purchased)
         XCTAssertEqual(PurchaseStateValue(rawValue: 1), .canceled)
         XCTAssertEqual(PurchaseStateValue(rawValue: 2), .pending)
         XCTAssertNil(PurchaseStateValue(rawValue: 99))
     }
-    
-    // MARK: - Plugin Initialize Tests
-    
-    func testInitializeIsIdempotent() {
-        // Multiple calls should all succeed
+
+    // MARK: - Initialize Tests
+
+    func testInitialize() throws {
+        let jsonString = try pluginInitialize()
+        let json = try XCTUnwrap(parseJSON(jsonString))
+        XCTAssertEqual(json["success"] as? Bool, true)
+    }
+
+    func testInitializeIsIdempotent() throws {
         for _ in 0..<5 {
-            let result = pluginInitialize()
-            XCTAssertTrue(isResultOk(result))
+            XCTAssertNoThrow(try pluginInitialize())
         }
     }
-    
-    func testInitializeReturnsValidJSON() {
-        let result = pluginInitialize()
-        guard let jsonString = getResultString(result),
-              let data = jsonString.data(using: String.Encoding.utf8) else {
-            XCTFail("Failed to get result string")
-            return
-        }
-        
+
+    func testInitializeReturnsValidJSON() throws {
+        let jsonString = try pluginInitialize()
+        let data = try XCTUnwrap(jsonString.data(using: .utf8))
         XCTAssertNoThrow(try JSONSerialization.jsonObject(with: data))
     }
-    
-    // MARK: - Plugin AcknowledgePurchase Tests
-    
-    func testAcknowledgePurchaseWithEmptyToken() {
-        let result = pluginAcknowledgePurchase(purchaseToken: RustString(""))
-        XCTAssertTrue(isResultOk(result))
+
+    // MARK: - AcknowledgePurchase Tests
+
+    func testAcknowledgePurchase() throws {
+        let jsonString = try acknowledgePurchase(purchaseToken: RustString("test_token"))
+        let json = try XCTUnwrap(parseJSON(jsonString))
+        XCTAssertEqual(json["success"] as? Bool, true)
     }
-    
-    func testAcknowledgePurchaseWithLongToken() {
+
+    func testAcknowledgePurchaseWithEmptyToken() throws {
+        XCTAssertNoThrow(try acknowledgePurchase(purchaseToken: RustString("")))
+    }
+
+    func testAcknowledgePurchaseWithLongToken() throws {
         let longToken = String(repeating: "token_", count: 100)
-        let result = pluginAcknowledgePurchase(purchaseToken: RustString(longToken))
-        XCTAssertTrue(isResultOk(result))
+        XCTAssertNoThrow(try acknowledgePurchase(purchaseToken: RustString(longToken)))
     }
-    
-    func testAcknowledgePurchaseReturnsValidJSON() {
-        let result = pluginAcknowledgePurchase(purchaseToken: RustString("any_token"))
-        guard let jsonString = getResultString(result),
-              let data = jsonString.data(using: String.Encoding.utf8),
-              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-            XCTFail("Failed to parse JSON")
-            return
-        }
-        
+
+    func testAcknowledgePurchaseReturnsValidJSON() throws {
+        let jsonString = try acknowledgePurchase(purchaseToken: RustString("any_token"))
+        let json = try XCTUnwrap(parseJSON(jsonString))
         XCTAssertTrue(json.keys.contains("success"))
     }
 }
@@ -162,27 +109,18 @@ final class StoreKitTests: XCTestCase {
 
     func testGetProductsReturnsProducts() async throws {
         // TODO: fix it somehow
-        throw XCTSkip("Skipping testGetProductsWithEmptyArray due to StoreKit daemon unavailability")
+        throw XCTSkip("Skipping due to StoreKit daemon unavailability")
 
         let productIds = RustVec<RustString>()
         productIds.push(value: RustString("com.test.removeads"))
         productIds.push(value: RustString("com.test.premium"))
 
-        let result = await getProducts(productIds: productIds, productType: RustString("inapp"))
-
-        XCTAssertTrue(isResultOk(result))
-
-        guard let jsonString = getResultString(result),
-              let data = jsonString.data(using: .utf8),
-              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let products = json["products"] as? [[String: Any]] else {
-            XCTFail("Failed to parse products response")
-            return
-        }
+        let jsonString = try await getProducts(productIds: productIds, productType: RustString("inapp"))
+        let json = try XCTUnwrap(parseJSON(jsonString))
+        let products = try XCTUnwrap(json["products"] as? [JsonObject])
 
         XCTAssertEqual(products.count, 2)
 
-        // Check first product has expected fields
         if let firstProduct = products.first {
             XCTAssertNotNil(firstProduct["productId"])
             XCTAssertNotNil(firstProduct["title"])
@@ -193,22 +131,14 @@ final class StoreKitTests: XCTestCase {
 
     func testGetProductsWithSubscription() async throws {
         // TODO: fix it somehow
-        throw XCTSkip("Skipping testGetProductsWithEmptyArray due to StoreKit daemon unavailability")
+        throw XCTSkip("Skipping due to StoreKit daemon unavailability")
 
         let productIds = RustVec<RustString>()
         productIds.push(value: RustString("com.test.premium.monthly"))
 
-        let result = await getProducts(productIds: productIds, productType: RustString("subs"))
-
-        XCTAssertTrue(isResultOk(result))
-
-        guard let jsonString = getResultString(result),
-              let data = jsonString.data(using: .utf8),
-              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let products = json["products"] as? [[String: Any]] else {
-            XCTFail("Failed to parse products response")
-            return
-        }
+        let jsonString = try await getProducts(productIds: productIds, productType: RustString("subs"))
+        let json = try XCTUnwrap(parseJSON(jsonString))
+        let products = try XCTUnwrap(json["products"] as? [JsonObject])
 
         XCTAssertEqual(products.count, 1)
 
@@ -218,61 +148,37 @@ final class StoreKitTests: XCTestCase {
         }
     }
 
-    func testGetProductsWithNonExistentProduct() async {
+    func testGetProductsWithNonExistentProduct() async throws {
         let productIds = RustVec<RustString>()
         productIds.push(value: RustString("com.test.nonexistent"))
 
-        let result = await getProducts(productIds: productIds, productType: RustString("inapp"))
-
-        XCTAssertTrue(isResultOk(result))
-
-        guard let jsonString = getResultString(result),
-              let data = jsonString.data(using: .utf8),
-              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let products = json["products"] as? [[String: Any]] else {
-            XCTFail("Failed to parse products response")
-            return
-        }
+        let jsonString = try await getProducts(productIds: productIds, productType: RustString("inapp"))
+        let json = try XCTUnwrap(parseJSON(jsonString))
+        let products = try XCTUnwrap(json["products"] as? [JsonObject])
 
         XCTAssertEqual(products.count, 0)
     }
 
-    func testGetProductsWithEmptyArray() async {
+    func testGetProductsWithEmptyArray() async throws {
         let productIds = RustVec<RustString>()
 
-        let result = await getProducts(productIds: productIds, productType: RustString("inapp"))
-
-        XCTAssertTrue(isResultOk(result))
-
-        guard let jsonString = getResultString(result),
-              let data = jsonString.data(using: .utf8),
-              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let products = json["products"] as? [[String: Any]] else {
-            XCTFail("Failed to parse products response")
-            return
-        }
+        let jsonString = try await getProducts(productIds: productIds, productType: RustString("inapp"))
+        let json = try XCTUnwrap(parseJSON(jsonString))
+        let products = try XCTUnwrap(json["products"] as? [JsonObject])
 
         XCTAssertEqual(products.count, 0)
     }
 
     func testGetProductsWithConsumable() async throws {
         // TODO: fix it somehow
-        throw XCTSkip("Skipping testGetProductsWithEmptyArray due to StoreKit daemon unavailability")
+        throw XCTSkip("Skipping due to StoreKit daemon unavailability")
 
         let productIds = RustVec<RustString>()
         productIds.push(value: RustString("com.test.coins100"))
 
-        let result = await getProducts(productIds: productIds, productType: RustString("inapp"))
-
-        XCTAssertTrue(isResultOk(result))
-
-        guard let jsonString = getResultString(result),
-              let data = jsonString.data(using: .utf8),
-              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let products = json["products"] as? [[String: Any]] else {
-            XCTFail("Failed to parse products response")
-            return
-        }
+        let jsonString = try await getProducts(productIds: productIds, productType: RustString("inapp"))
+        let json = try XCTUnwrap(parseJSON(jsonString))
+        let products = try XCTUnwrap(json["products"] as? [JsonObject])
 
         XCTAssertEqual(products.count, 1)
 
