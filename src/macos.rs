@@ -69,33 +69,65 @@ mod codesign {
 #[swift_bridge::bridge]
 mod ffi {
     pub enum FFIResult {
-        Ok(String),  // json string from Swift
         Err(String), // error message from Swift
     }
 
     extern "Rust" {
-        fn trigger(event: String, payload: String);
+        fn trigger(event: String, payload: String) -> Result<(), FFIResult>;
     }
 
     extern "Swift" {
-        fn initialize() -> FFIResult;
-        async fn getProducts(productIds: Vec<String>, productType: String) -> FFIResult;
+        fn initialize() -> Result<String, FFIResult>;
+        async fn getProducts(
+            productIds: Vec<String>,
+            productType: String,
+        ) -> Result<String, FFIResult>;
         async fn purchase(
             productId: String,
             productType: String,
             offerToken: Option<String>,
-        ) -> FFIResult;
-        async fn restorePurchases(productType: String) -> FFIResult;
-        fn acknowledgePurchase(purchaseToken: String) -> FFIResult;
-        async fn getProductStatus(productId: String, productType: String) -> FFIResult;
+        ) -> Result<String, FFIResult>;
+        async fn restorePurchases(productType: String) -> Result<String, FFIResult>;
+        fn acknowledgePurchase(purchaseToken: String) -> Result<String, FFIResult>;
+        async fn getProductStatus(
+            productId: String,
+            productType: String,
+        ) -> Result<String, FFIResult>;
+    }
+}
+
+/// Extension trait for parsing FFI responses from Swift into typed Rust results.
+trait ParseFfiResponse {
+    /// Deserializes a JSON response into the target type, converting FFI errors
+    /// into plugin errors.
+    fn parse<T: DeserializeOwned>(self) -> crate::Result<T>;
+}
+
+impl ParseFfiResponse for Result<String, ffi::FFIResult> {
+    fn parse<T: DeserializeOwned>(self) -> crate::Result<T> {
+        match self {
+            Ok(json) => serde_json::from_str(&json)
+                .map_err(|e| crate::error::PluginInvokeError::CannotDeserializeResponse(e).into()),
+            Err(ffi::FFIResult::Err(msg)) => Err(crate::error::PluginInvokeError::InvokeRejected(
+                crate::error::ErrorResponse {
+                    code: None,
+                    message: Some(msg),
+                    data: (),
+                },
+            )
+            .into()),
+        }
     }
 }
 
 /// Called by Swift via FFI when transaction updates occur.
-fn trigger(event: String, payload: String) {
-    if let Some(tx) = EVENT_TX.get() {
-        let _ = tx.send((event, payload));
-    }
+fn trigger(event: String, payload: String) -> Result<(), ffi::FFIResult> {
+    let tx = EVENT_TX
+        .get()
+        .ok_or_else(|| ffi::FFIResult::Err("Event channel not initialized".to_string()))?;
+
+    tx.send((event, payload))
+        .map_err(|e| ffi::FFIResult::Err(format!("Failed to send event: {e}")))
 }
 
 pub fn init<R: Runtime, C: DeserializeOwned>(
@@ -120,29 +152,10 @@ pub fn init<R: Runtime, C: DeserializeOwned>(
 pub struct Iap<R: Runtime>(AppHandle<R>);
 
 impl<R: Runtime> Iap<R> {
-    /// Convert the bridged FFI result to a Rust Result.
-    fn to_result<T: serde::de::DeserializeOwned>(bridged: ffi::FFIResult) -> crate::Result<T> {
-        match bridged {
-            ffi::FFIResult::Ok(response) => {
-                let parsed: T = serde_json::from_str(&response)
-                    .map_err(crate::error::PluginInvokeError::CannotDeserializeResponse)?;
-                Ok(parsed)
-            }
-            ffi::FFIResult::Err(err) => {
-                let error_response = crate::error::ErrorResponse {
-                    code: None,
-                    message: Some(err),
-                    data: (),
-                };
-                Err(crate::error::PluginInvokeError::InvokeRejected(error_response).into())
-            }
-        }
-    }
-
     pub fn initialize(&self) -> crate::Result<InitializeResponse> {
         codesign::is_signature_valid()?;
 
-        Self::to_result(ffi::initialize())
+        ffi::initialize().parse()
     }
 
     pub async fn get_products(
@@ -152,20 +165,19 @@ impl<R: Runtime> Iap<R> {
     ) -> crate::Result<GetProductsResponse> {
         codesign::is_signature_valid()?;
 
-        Self::to_result(ffi::getProducts(product_ids, product_type).await)
+        ffi::getProducts(product_ids, product_type).await.parse()
     }
 
     pub async fn purchase(&self, payload: PurchaseRequest) -> crate::Result<Purchase> {
         codesign::is_signature_valid()?;
 
-        Self::to_result(
-            ffi::purchase(
-                payload.product_id,
-                payload.product_type,
-                payload.options.and_then(|opts| opts.offer_token),
-            )
-            .await,
+        ffi::purchase(
+            payload.product_id,
+            payload.product_type,
+            payload.options.and_then(|opts| opts.offer_token),
         )
+        .await
+        .parse()
     }
 
     pub async fn restore_purchases(
@@ -174,7 +186,7 @@ impl<R: Runtime> Iap<R> {
     ) -> crate::Result<RestorePurchasesResponse> {
         codesign::is_signature_valid()?;
 
-        Self::to_result(ffi::restorePurchases(product_type).await)
+        ffi::restorePurchases(product_type).await.parse()
     }
 
     pub fn acknowledge_purchase(
@@ -183,7 +195,7 @@ impl<R: Runtime> Iap<R> {
     ) -> crate::Result<AcknowledgePurchaseResponse> {
         codesign::is_signature_valid()?;
 
-        Self::to_result(ffi::acknowledgePurchase(purchase_token))
+        ffi::acknowledgePurchase(purchase_token).parse()
     }
 
     pub async fn get_product_status(
@@ -193,6 +205,8 @@ impl<R: Runtime> Iap<R> {
     ) -> crate::Result<ProductStatus> {
         codesign::is_signature_valid()?;
 
-        Self::to_result(ffi::getProductStatus(product_id, product_type).await)
+        ffi::getProductStatus(product_id, product_type)
+            .await
+            .parse()
     }
 }

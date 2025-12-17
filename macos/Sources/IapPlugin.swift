@@ -1,5 +1,9 @@
 import StoreKit
 
+extension FFIResult: Error {}
+
+typealias JsonObject = [String: Any]
+
 /// Keep in sync with PurchaseState in guest-js/index.ts
 enum PurchaseStateValue: Int {
     case purchased = 0
@@ -7,149 +11,145 @@ enum PurchaseStateValue: Int {
     case pending = 2
 }
 
-private func serializeToJSON(_ object: [String: Any]) -> String? {
+private func serializeToJSON(_ object: JsonObject) throws(FFIResult) -> String {
     guard let data = try? JSONSerialization.data(withJSONObject: object),
           let jsonString = String(data: data, encoding: .utf8) else {
-        return nil
+        throw FFIResult.Err(RustString("Failed to serialize JSON"))
     }
     return jsonString
 }
 
-public func initialize() -> FFIResult {
+public func initialize() throws(FFIResult) -> String {
     // StoreKit 2 doesn't require explicit initialization
-    let json: [String: Any] = ["success": true]
-    if let jsonString = serializeToJSON(json) {
-        return .Ok(RustString(jsonString))
-    } else {
-        return .Err(RustString("Failed to serialize JSON"))
-    }
+    return try serializeToJSON(["success": true])
 }
 
-func getProducts(productIds: RustVec<RustString>, productType: RustString) async -> FFIResult {
+func getProducts(productIds: RustVec<RustString>, productType: RustString) async throws(FFIResult) -> String {
+    let ids: [String] = productIds.map { $0.as_str().toString() }
+    let products: [Product]
     do {
-        let ids: [String] = productIds.map { $0.as_str().toString() }
-        let products = try await Product.products(for: ids)
-        var productsArray: [[String: Any]] = []
+        products = try await Product.products(for: ids)
+    } catch {
+        throw FFIResult.Err(RustString("Failed to fetch products: \(error.localizedDescription)"))
+    }
+    var productsArray: [JsonObject] = []
 
-        for product in products {
-            var productDict: [String: Any] = [
-                "productId": product.id,
-                "title": product.displayName,
-                "description": product.description,
-                "productType": product.type.rawValue
-            ]
-            
-            // Add pricing information
-            productDict["formattedPrice"] = product.displayPrice
-            productDict["priceCurrencyCode"] = getCurrencyCode(for: product)
-            
-            // Handle subscription-specific information
-            if product.type == .autoRenewable || product.type == .nonRenewable {
-                if let subscription = product.subscription {
-                    var subscriptionOffers: [[String: Any]] = []
-                    
-                    // Add introductory offer if available
-                    if let introOffer = subscription.introductoryOffer {
-                        let offer: [String: Any] = [
-                            "offerToken": "",  // macOS doesn't use offer tokens
-                            "basePlanId": "",
-                            "offerId": introOffer.id ?? "",
-                            "pricingPhases": [[
-                                "formattedPrice": introOffer.displayPrice,
-                                "priceCurrencyCode": getCurrencyCode(for: product),
-                                "priceAmountMicros": 0,  // Not available in StoreKit 2
-                                "billingPeriod": formatSubscriptionPeriod(introOffer.period),
-                                "billingCycleCount": introOffer.periodCount,
-                                "recurrenceMode": 0
-                            ]]
-                        ]
-                        subscriptionOffers.append(offer)
-                    }
-                    
-                    // Add regular subscription info
-                    let regularOffer: [String: Any] = [
-                        "offerToken": "",
+    for product in products {
+        var productDict: JsonObject = [
+            "productId": product.id,
+            "title": product.displayName,
+            "description": product.description,
+            "productType": product.type.rawValue
+        ]
+
+        // Add pricing information
+        productDict["formattedPrice"] = product.displayPrice
+        productDict["priceCurrencyCode"] = getCurrencyCode(for: product)
+
+        // Handle subscription-specific information
+        if product.type == .autoRenewable || product.type == .nonRenewable {
+            if let subscription = product.subscription {
+                var subscriptionOffers: [JsonObject] = []
+
+                // Add introductory offer if available
+                if let introOffer = subscription.introductoryOffer {
+                    let offer: JsonObject = [
+                        "offerToken": "",  // macOS doesn't use offer tokens
                         "basePlanId": "",
-                        "offerId": "",
+                        "offerId": introOffer.id ?? "",
                         "pricingPhases": [[
-                            "formattedPrice": product.displayPrice,
+                            "formattedPrice": introOffer.displayPrice,
                             "priceCurrencyCode": getCurrencyCode(for: product),
-                            "priceAmountMicros": 0,
-                            "billingPeriod": formatSubscriptionPeriod(subscription.subscriptionPeriod),
-                            "billingCycleCount": 0,
-                            "recurrenceMode": 1
+                            "priceAmountMicros": 0,  // Not available in StoreKit 2
+                            "billingPeriod": formatSubscriptionPeriod(introOffer.period),
+                            "billingCycleCount": introOffer.periodCount,
+                            "recurrenceMode": 0
                         ]]
                     ]
-                    subscriptionOffers.append(regularOffer)
-                    
-                    productDict["subscriptionOfferDetails"] = subscriptionOffers
+                    subscriptionOffers.append(offer)
                 }
-            } else {
-                // One-time purchase
-                productDict["priceAmountMicros"] = 0  // Not available in StoreKit 2
+
+                // Add regular subscription info
+                let regularOffer: JsonObject = [
+                    "offerToken": "",
+                    "basePlanId": "",
+                    "offerId": "",
+                    "pricingPhases": [[
+                        "formattedPrice": product.displayPrice,
+                        "priceCurrencyCode": getCurrencyCode(for: product),
+                        "priceAmountMicros": 0,
+                        "billingPeriod": formatSubscriptionPeriod(subscription.subscriptionPeriod),
+                        "billingCycleCount": 0,
+                        "recurrenceMode": 1
+                    ]]
+                ]
+                subscriptionOffers.append(regularOffer)
+
+                productDict["subscriptionOfferDetails"] = subscriptionOffers
             }
-            
-            productsArray.append(productDict)
-        }
-        
-        let json: [String: Any] = ["products": productsArray]
-        if let jsonString = serializeToJSON(json) {
-            return .Ok(RustString(jsonString))
         } else {
-            return .Err(RustString("Failed to serialize JSON"))
+            // One-time purchase
+            productDict["priceAmountMicros"] = 0  // Not available in StoreKit 2
         }
-    } catch {
-        return .Err(RustString("Failed to fetch products: \(error.localizedDescription)"))
+
+        productsArray.append(productDict)
     }
+
+    return try serializeToJSON(["products": productsArray])
 }
 
-func purchase(productId: RustString, productType: RustString, offerToken: Optional<RustString>) async -> FFIResult {
+func purchase(productId: RustString, productType: RustString, offerToken: Optional<RustString>) async throws(FFIResult) -> String {
+    let id = productId.as_str().toString()
+
+    let products: [Product]
     do {
-        let id = productId.as_str().toString()
-        let products = try await Product.products(for: [id])
-        guard let product = products.first else {
-            return .Err(RustString("Product not found"))
-        }
-        
-        // Initiate purchase
-        let result = try await product.purchase()
-        
-        switch result {
-        case .success(let verification):
-            switch verification {
-            case .verified(let transaction):
-                // Finish the transaction
-                await transaction.finish()
-
-                let purchase = await createPurchaseObject(from: transaction, product: product)
-                if let jsonString = serializeToJSON(purchase) {
-                    // Emit event for purchase state change
-                    trigger("purchaseUpdated", jsonString)
-                    return .Ok(RustString(jsonString))
-                } else {
-                    return .Err(RustString("Failed to serialize purchase"))
-                }
-                
-            case .unverified(_, _):
-                return .Err(RustString("Transaction verification failed"))
-            }
-            
-        case .userCancelled:
-            return .Err(RustString("Purchase cancelled by user"))
-            
-        case .pending:
-            return .Err(RustString("Purchase is pending"))
-            
-        @unknown default:
-            return .Err(RustString("Unknown purchase result"))
-        }
+        products = try await Product.products(for: [id])
     } catch {
-        return .Err(RustString("Purchase failed: \(error.localizedDescription)"))
+        throw FFIResult.Err(RustString("Failed to fetch product: \(error.localizedDescription)"))
+    }
+
+    guard let product = products.first else {
+        throw FFIResult.Err(RustString("Product not found"))
+    }
+
+    // Initiate purchase
+    let result: Product.PurchaseResult
+    do {
+        result = try await product.purchase()
+    } catch {
+        throw FFIResult.Err(RustString("Purchase failed: \(error.localizedDescription)"))
+    }
+
+    switch result {
+    case .success(let verification):
+        switch verification {
+        case .verified(let transaction):
+            // Finish the transaction
+            await transaction.finish()
+
+            let purchase = await createPurchaseObject(from: transaction, product: product)
+            let jsonString = try serializeToJSON(purchase)
+            // Emit event for purchase state change
+            try? trigger("purchaseUpdated", jsonString)
+            return jsonString
+
+        case .unverified(_, _):
+            throw FFIResult.Err(RustString("Transaction verification failed"))
+        }
+
+    case .userCancelled:
+        throw FFIResult.Err(RustString("Purchase cancelled by user"))
+
+    case .pending:
+        throw FFIResult.Err(RustString("Purchase is pending"))
+
+    @unknown default:
+        throw FFIResult.Err(RustString("Unknown purchase result"))
     }
 }
 
-func restorePurchases(productType: RustString) async -> FFIResult {
-    var purchases: [[String: Any]] = []
+func restorePurchases(productType: RustString) async throws(FFIResult) -> String {
+    var purchases: [JsonObject] = []
     let requestedType = productType.as_str().toString()
     
     // Get all current entitlements
@@ -185,28 +185,18 @@ func restorePurchases(productType: RustString) async -> FFIResult {
         }
     }
     
-    let json: [String: Any] = ["purchases": purchases]
-    if let jsonString = serializeToJSON(json) {
-        return .Ok(RustString(jsonString))
-    } else {
-        return .Err(RustString("Failed to serialize purchases"))
-    }
+    return try serializeToJSON(["purchases": purchases])
 }
 
-public func acknowledgePurchase(purchaseToken: RustString) -> FFIResult {
+public func acknowledgePurchase(purchaseToken: RustString) throws(FFIResult) -> String {
     // Not needed on Apple platforms
-    let json: [String: Any] = ["success": true]
-    if let jsonString = serializeToJSON(json) {
-        return .Ok(RustString(jsonString))
-    } else {
-        return .Err(RustString("Failed to serialize JSON"))
-    }
+    return try serializeToJSON(["success": true])
 }
 
-func getProductStatus(productId: RustString, productType: RustString) async -> FFIResult {
+func getProductStatus(productId: RustString, productType: RustString) async throws(FFIResult) -> String {
     let id = productId.as_str().toString()
     
-    var statusResult: [String: Any] = [
+    var statusResult: JsonObject = [
         "productId": id,
         "isOwned": false
     ]
@@ -270,11 +260,7 @@ func getProductStatus(productId: RustString, productType: RustString) async -> F
         }
     }
     
-    if let jsonString = serializeToJSON(statusResult) {
-        return .Ok(RustString(jsonString))
-    } else {
-        return .Err(RustString("Failed to serialize status"))
-    }
+    return try serializeToJSON(statusResult)
 }
 
 // MARK: - Helper Functions
@@ -303,7 +289,7 @@ private func getCurrencyCode(for product: Product) -> String {
     }
 }
 
-private func createPurchaseObject(from transaction: Transaction, product: Product) async -> [String: Any] {
+private func createPurchaseObject(from transaction: Transaction, product: Product) async -> JsonObject {
     var isAutoRenewing = false
     
     // Check if it's an auto-renewable subscription
