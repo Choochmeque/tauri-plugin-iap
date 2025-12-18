@@ -7,4 +7,4 @@ build
 node_modules
 schema.json
 target
-**/gen/schemas/*
+**/gen/*
