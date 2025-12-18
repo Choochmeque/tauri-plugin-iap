@@ -75,15 +75,16 @@ impl<R: Runtime> Iap<R> {
             .map_err(Into::into)
     }
 
-    pub fn acknowledge_purchase(
+    pub async fn acknowledge_purchase(
         &self,
         purchase_token: String,
     ) -> crate::Result<AcknowledgePurchaseResponse> {
         self.0
-            .run_mobile_plugin(
+            .run_mobile_plugin_async(
                 "acknowledgePurchase",
                 AcknowledgePurchaseRequest { purchase_token },
             )
+            .await
             .map_err(Into::into)
     }
 

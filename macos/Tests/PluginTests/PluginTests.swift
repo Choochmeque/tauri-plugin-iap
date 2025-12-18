@@ -58,23 +58,23 @@ final class PluginTests: XCTestCase {
 
     // MARK: - AcknowledgePurchase Tests
 
-    func testAcknowledgePurchase() throws {
-        let jsonString = try acknowledgePurchase(purchaseToken: RustString("test_token"))
+    func testAcknowledgePurchase() async throws {
+        let jsonString = try await acknowledgePurchase(purchaseToken: RustString("test_token"))
         let json = try XCTUnwrap(parseJSON(jsonString))
         XCTAssertEqual(json["success"] as? Bool, true)
     }
 
-    func testAcknowledgePurchaseWithEmptyToken() throws {
-        XCTAssertNoThrow(try acknowledgePurchase(purchaseToken: RustString("")))
+    func testAcknowledgePurchaseWithEmptyToken() async throws {
+        _ = try await acknowledgePurchase(purchaseToken: RustString(""))
     }
 
-    func testAcknowledgePurchaseWithLongToken() throws {
+    func testAcknowledgePurchaseWithLongToken() async throws {
         let longToken = String(repeating: "token_", count: 100)
-        XCTAssertNoThrow(try acknowledgePurchase(purchaseToken: RustString(longToken)))
+        _ = try await acknowledgePurchase(purchaseToken: RustString(longToken))
     }
 
-    func testAcknowledgePurchaseReturnsValidJSON() throws {
-        let jsonString = try acknowledgePurchase(purchaseToken: RustString("any_token"))
+    func testAcknowledgePurchaseReturnsValidJSON() async throws {
+        let jsonString = try await acknowledgePurchase(purchaseToken: RustString("any_token"))
         let json = try XCTUnwrap(parseJSON(jsonString))
         XCTAssertTrue(json.keys.contains("success"))
     }

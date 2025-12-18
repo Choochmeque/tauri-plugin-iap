@@ -188,7 +188,7 @@ func restorePurchases(productType: RustString) async throws(FFIResult) -> String
     return try serializeToJSON(["purchases": purchases])
 }
 
-public func acknowledgePurchase(purchaseToken: RustString) throws(FFIResult) -> String {
+public func acknowledgePurchase(purchaseToken: RustString) async throws(FFIResult) -> String {
     // Not needed on Apple platforms
     return try serializeToJSON(["success": true])
 }

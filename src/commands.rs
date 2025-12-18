@@ -39,7 +39,7 @@ pub(crate) async fn acknowledge_purchase<R: Runtime>(
     app: AppHandle<R>,
     payload: AcknowledgePurchaseRequest,
 ) -> Result<AcknowledgePurchaseResponse> {
-    app.iap().acknowledge_purchase(payload.purchase_token)
+    app.iap().acknowledge_purchase(payload.purchase_token).await
 }
 
 #[command]

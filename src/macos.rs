@@ -88,7 +88,7 @@ mod ffi {
             offerToken: Option<String>,
         ) -> Result<String, FFIResult>;
         async fn restorePurchases(productType: String) -> Result<String, FFIResult>;
-        fn acknowledgePurchase(purchaseToken: String) -> Result<String, FFIResult>;
+        async fn acknowledgePurchase(purchaseToken: String) -> Result<String, FFIResult>;
         async fn getProductStatus(
             productId: String,
             productType: String,
@@ -189,13 +189,13 @@ impl<R: Runtime> Iap<R> {
         ffi::restorePurchases(product_type).await.parse()
     }
 
-    pub fn acknowledge_purchase(
+    pub async fn acknowledge_purchase(
         &self,
         purchase_token: String,
     ) -> crate::Result<AcknowledgePurchaseResponse> {
         codesign::is_signature_valid()?;
 
-        ffi::acknowledgePurchase(purchase_token).parse()
+        ffi::acknowledgePurchase(purchase_token).await.parse()
     }
 
     pub async fn get_product_status(

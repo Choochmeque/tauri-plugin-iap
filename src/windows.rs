@@ -502,7 +502,7 @@ impl<R: Runtime> Iap<R> {
         })
     }
 
-    pub fn acknowledge_purchase(
+    pub async fn acknowledge_purchase(
         &self,
         _purchase_token: String,
     ) -> crate::Result<AcknowledgePurchaseResponse> {
