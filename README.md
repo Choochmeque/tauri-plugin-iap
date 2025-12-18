@@ -70,6 +70,39 @@ fn main() {
 }
 ```
 
+## Example App
+
+An example application is available in the [`examples/tauri-app`](examples/tauri-app) directory. The example demonstrates all core IAP functionality with a UI:
+
+- Initialize IAP connection
+- Fetch and display products with pricing
+- Purchase products and subscriptions
+- Restore previous purchases
+- Check product ownership status
+- Real-time purchase update notifications
+
+### Running the Example
+
+```bash
+cd examples/tauri-app
+
+# Install dependencies
+pnpm install
+
+# Run in development mode
+pnpm tauri dev
+
+# Build for production
+pnpm tauri build
+```
+
+**Important:** The app must be properly code-signed to test IAP functionality:
+- **iOS/macOS**: Code signing is required by StoreKit. Configure signing in Xcode or via Tauri's configuration.
+- **Android**: Sign your APK/AAB with a release keystore for production testing.
+- **Windows**: App must be associated with Microsoft Store and signed for Store submission.
+
+The example app provides a fully functional demo with inline documentation for each IAP feature, making it easy to understand how to integrate the plugin into your own application.
+
 ## Usage
 
 ### JavaScript/TypeScript
