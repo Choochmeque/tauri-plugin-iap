@@ -35,6 +35,12 @@ updates:
     schedule:
       interval: "weekly"
 
+  # Enable version updates for Gradle (example project)
+  - package-ecosystem: "gradle"
+    directory: "/examples/iap-demo/gen/android/"
+    schedule:
+      interval: "weekly"
+
   # Enable version updates for GitHub Actions
   - package-ecosystem: "github-actions"
     directory: "/"
