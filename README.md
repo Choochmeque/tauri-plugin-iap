@@ -196,6 +196,37 @@ await listener.unregister();
 3. Associate your app with the Microsoft Store
 4. Test with Windows sandbox environment
 
+### macOS Setup
+
+1. Configure your app in App Store Connect
+2. Create subscription or in-app purchase products with pricing
+3. Configure code signing in `tauri.conf.json`:
+   ```json
+   {
+     "bundle": {
+       "macOS": {
+         "signingIdentity": "Developer ID Application: Your Name (TEAM_ID)",
+         "entitlements": "path/to/entitlements.plist"
+       }
+     }
+   }
+   ```
+4. Add required entitlements for StoreKit (create `entitlements.plist`):
+   ```xml
+   <?xml version="1.0" encoding="UTF-8"?>
+   <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+   <plist version="1.0">
+   <dict>
+       <key>com.apple.security.app-sandbox</key>
+       <true/>
+       <key>com.apple.security.network.client</key>
+       <true/>
+   </dict>
+   </plist>
+   ```
+5. Test with sandbox accounts or StoreKit Configuration files
+6. **Important**: App must be code-signed to use StoreKit APIs
+
 ## API Reference
 
 ### `initialize()`
