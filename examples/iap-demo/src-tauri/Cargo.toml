@@ -1,7 +1,7 @@
 [package]
-name = "tauri-app"
+name = "iap-demo"
 version = "0.1.0"
-description = "A Tauri App"
+description = "IAP Plugin Demo App"
 authors = ["you"]
 license = ""
 repository = ""
@@ -9,7 +9,7 @@ edition = "2021"
 rust-version = "1.77.2"
 
 [lib]
-name = "tauri_app_lib"
+name = "iap_demo_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html

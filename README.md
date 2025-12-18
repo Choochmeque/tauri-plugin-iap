@@ -72,7 +72,7 @@ fn main() {
 
 ## Example App
 
-An example application is available in the [`examples/tauri-app`](examples/tauri-app) directory. The example demonstrates all core IAP functionality with a UI:
+An example application is available in the [`examples/iap-demo`](examples/iap-demo) directory. The example demonstrates all core IAP functionality with a UI:
 
 - Initialize IAP connection
 - Fetch and display products with pricing
@@ -84,7 +84,7 @@ An example application is available in the [`examples/tauri-app`](examples/tauri
 ### Running the Example
 
 ```bash
-cd examples/tauri-app
+cd examples/iap-demo
 
 # Install dependencies
 pnpm install
