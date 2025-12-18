@@ -106,7 +106,7 @@ impl<R: Runtime> Iap<R> {
         Ok(InitializeResponse { success: true })
     }
 
-    pub fn get_products(
+    pub async fn get_products(
         &self,
         product_ids: Vec<String>,
         product_type: String,
@@ -281,14 +281,16 @@ impl<R: Runtime> Iap<R> {
         })
     }
 
-    pub fn purchase(&self, payload: PurchaseRequest) -> crate::Result<Purchase> {
+    pub async fn purchase(&self, payload: PurchaseRequest) -> crate::Result<Purchase> {
         let context = self.get_store_context()?;
 
         // Get the product first to ensure it exists
-        let products_response = self.get_products(
-            vec![payload.product_id.clone()],
-            payload.product_type.clone(),
-        )?;
+        let products_response = self
+            .get_products(
+                vec![payload.product_id.clone()],
+                payload.product_type.clone(),
+            )
+            .await?;
 
         if products_response.products.is_empty() {
             return Err(crate::Error::PluginInvoke(
@@ -413,7 +415,7 @@ impl<R: Runtime> Iap<R> {
         Ok(purchase)
     }
 
-    pub fn restore_purchases(
+    pub async fn restore_purchases(
         &self,
         product_type: String,
     ) -> crate::Result<RestorePurchasesResponse> {
@@ -509,7 +511,7 @@ impl<R: Runtime> Iap<R> {
         Ok(AcknowledgePurchaseResponse { success: true })
     }
 
-    pub fn get_product_status(
+    pub async fn get_product_status(
         &self,
         product_id: String,
         product_type: String,

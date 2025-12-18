@@ -35,34 +35,37 @@ impl<R: Runtime> Iap<R> {
             .map_err(Into::into)
     }
 
-    pub fn get_products(
+    pub async fn get_products(
         &self,
         product_ids: Vec<String>,
         product_type: String,
     ) -> crate::Result<GetProductsResponse> {
         self.0
-            .run_mobile_plugin(
+            .run_mobile_plugin_async(
                 "getProducts",
                 GetProductsRequest {
                     product_ids,
                     product_type,
                 },
             )
+            .await
             .map_err(Into::into)
     }
 
-    pub fn purchase(&self, payload: PurchaseRequest) -> crate::Result<Purchase> {
+    pub async fn purchase(&self, payload: PurchaseRequest) -> crate::Result<Purchase> {
         self.0
-            .run_mobile_plugin("purchase", payload)
+            .run_mobile_plugin_async("purchase", payload)
+            .await
             .map_err(Into::into)
     }
 
-    pub fn restore_purchases(
+    pub async fn restore_purchases(
         &self,
         product_type: String,
     ) -> crate::Result<RestorePurchasesResponse> {
         self.0
-            .run_mobile_plugin("restorePurchases", RestorePurchasesRequest { product_type })
+            .run_mobile_plugin_async("restorePurchases", RestorePurchasesRequest { product_type })
+            .await
             .map_err(Into::into)
     }
 
@@ -84,19 +87,20 @@ impl<R: Runtime> Iap<R> {
             .map_err(Into::into)
     }
 
-    pub fn get_product_status(
+    pub async fn get_product_status(
         &self,
         product_id: String,
         product_type: String,
     ) -> crate::Result<ProductStatus> {
         self.0
-            .run_mobile_plugin(
+            .run_mobile_plugin_async(
                 "getProductStatus",
                 GetProductStatusRequest {
                     product_id,
                     product_type,
                 },
             )
+            .await
             .map_err(Into::into)
     }
 }
