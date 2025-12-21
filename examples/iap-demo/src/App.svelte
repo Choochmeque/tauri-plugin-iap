@@ -1,4 +1,5 @@
 <script>
+  import { onMount, onDestroy } from 'svelte'
   import {
     initialize,
     getProducts,
@@ -18,10 +19,43 @@
 	let purchaseHistory = []
 	let statusProductId = ''
 	let productStatus = null
+	let purchaseListener = null
+	let listenerReady = false
 
 	function updateResponse(returnValue) {
 		response += `[${new Date().toLocaleTimeString()}] ` + (typeof returnValue === 'string' ? returnValue : JSON.stringify(returnValue, null, 2)) + '\n\n'
 	}
+
+	// Setup purchase listener on mount
+	onMount(async () => {
+		console.log('[IAP Demo] Setting up purchase update listener...')
+		updateResponse('⏳ Setting up purchase update listener...')
+		try {
+			purchaseListener = await onPurchaseUpdated((purchase) => {
+				console.log('[IAP Demo] Purchase update received:', purchase)
+				updateResponse('🔔 Purchase updated: ' + JSON.stringify(purchase, null, 2))
+			})
+			listenerReady = true
+			console.log('[IAP Demo] Purchase listener registered successfully')
+			updateResponse('✓ Purchase update listener ready')
+		} catch (error) {
+			console.error('[IAP Demo] Failed to setup purchase listener:', error)
+			updateResponse('✗ Failed to setup purchase listener: ' + JSON.stringify(error))
+		}
+	})
+
+	// Cleanup listener on destroy
+	onDestroy(async () => {
+		if (purchaseListener) {
+			console.log('[IAP Demo] Cleaning up purchase listener...')
+			try {
+				await purchaseListener.unregister()
+				console.log('[IAP Demo] Purchase listener unregistered')
+			} catch (error) {
+				console.error('[IAP Demo] Error unregistering listener:', error)
+			}
+		}
+	})
 
 	async function handleInitialize() {
 		try {
@@ -84,11 +118,6 @@
 			updateResponse('✗ Get product status failed: ' + JSON.stringify(error))
 		}
 	}
-
-	// Listen for purchase updates
-	onPurchaseUpdated((purchase) => {
-		updateResponse('🔔 Purchase updated: ' + JSON.stringify(purchase, null, 2))
-	})
 </script>
 
 <main class="container">
