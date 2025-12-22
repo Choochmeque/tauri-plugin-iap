@@ -1,7 +1,7 @@
 [package]
 name = "tauri-plugin-iap"
 version = "0.5.0"
-authors = ["You"]
+authors = ["you"]
 description = "A Tauri v2 plugin that enables In-App Purchases (IAP)"
 edition = "2021"
 rust-version = "1.77.2"
@@ -18,9 +18,6 @@ thiserror = "2"
 
 [target.'cfg(target_os = "macos")'.dependencies]
 swift-bridge = { version = "0.1", features = ["async"], git = "https://github.com/chinedufn/swift-bridge", rev = "82b0885"}
-objc2 = "0.6"
-objc2-core-foundation = "0.3"
-objc2-security = "0.3"
 
 [target.'cfg(target_os = "windows")'.dependencies]
 windows = { version = "0.61", features = [
