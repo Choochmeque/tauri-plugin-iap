@@ -70,7 +70,7 @@ impl<R: Runtime> Iap<R> {
         )))
     }
 
-    /// Replication of tauri plugin listener management (TODO: move to common place)
+    // Replication of tauri plugin listener management (TODO: move to common place)
 
     pub fn register_listener(
         &self,

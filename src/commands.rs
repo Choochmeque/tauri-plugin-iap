@@ -52,7 +52,7 @@ pub(crate) async fn get_product_status<R: Runtime>(
         .await
 }
 
-/// Replication of tauri plugin listener management (TODO: move to common place)
+// Replication of tauri plugin listener management (TODO: move to common place)
 
 #[cfg(desktop)]
 #[command]
