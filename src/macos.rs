@@ -5,66 +5,38 @@ use tauri::{plugin::PluginApi, AppHandle, Runtime};
 
 use crate::models::*;
 
-static LISTENERS: OnceLock<RwLock<HashMap<String, HashMap<u32, tauri::ipc::Channel<String>>>>> =
-    OnceLock::new();
+type ChannelMap = HashMap<u32, tauri::ipc::Channel<String>>;
+type ListenerMap = HashMap<String, ChannelMap>;
 
-mod codesign {
-    use objc2_security::{kSecCSCheckAllArchitectures, kSecCSCheckNestedCode, SecCSFlags, SecCode};
-    use std::ptr::NonNull;
+static LISTENERS: OnceLock<RwLock<ListenerMap>> = OnceLock::new();
 
-    /// Returns `Ok(())` if the running binary is code-signed and valid, otherwise returns an Error.
-    ///
-    /// This validation works for all distribution methods:
-    /// - Development builds (signed with development certificate)
-    /// - TestFlight builds (signed with TestFlight Beta Distribution certificate)
-    /// - App Store builds (signed with App Store distribution certificate)
-    ///
-    /// Note: We intentionally do not use `kSecCSStrictValidate` as it can cause
-    /// validation failures for legitimate App Store and TestFlight builds.
-    /// The flags we use still ensure the code signature is valid and intact.
-    pub fn is_signature_valid() -> crate::Result<()> {
-        unsafe {
-            // 1) Get a handle to "self"
-            let mut self_code: *mut SecCode = std::ptr::null_mut();
-            let self_code_ptr = NonNull::<*mut SecCode>::new_unchecked(&mut self_code);
-            let status = SecCode::copy_self(SecCSFlags::empty(), self_code_ptr);
-            if status != 0 {
-                let error_response = crate::error::ErrorResponse {
-                    code: Some(status.to_string()),
-                    message: Some(format!("Failed to get code reference: OSStatus {status}")),
+/// Validation checks for macOS IAP functionality.
+///
+/// StoreKit requires the app to run from a signed .app bundle to communicate
+/// with the App Store. During development with `tauri dev`, the binary runs
+/// directly without a bundle, causing StoreKit calls to fail silently or crash.
+mod validation {
+    /// Ensures the app is running from a .app bundle.
+    pub fn require_bundle() -> crate::Result<()> {
+        std::env::current_exe()
+            .ok()
+            .and_then(|exe| {
+                let macos = exe.parent()?;
+                let contents = macos.parent()?;
+                let bundle = contents.parent()?;
+                (macos.ends_with("MacOS")
+                    && contents.ends_with("Contents")
+                    && bundle.to_string_lossy().ends_with(".app"))
+                .then_some(())
+            })
+            .ok_or_else(|| {
+                crate::error::PluginInvokeError::InvokeRejected(crate::error::ErrorResponse {
+                    code: Some("notBundled".to_string()),
+                    message: Some("IAP requires the app to run from a .app bundle.".to_string()),
                     data: (),
-                };
-                return Err(crate::error::PluginInvokeError::InvokeRejected(error_response).into());
-            }
-
-            // 2) Validate the dynamic code - this checks if the signature is valid
-            // Using kSecCSCheckAllArchitectures and kSecCSCheckNestedCode ensures thorough
-            // validation without the strict requirements that can fail for App Store/TestFlight builds
-            let validity_flags = SecCSFlags(kSecCSCheckAllArchitectures | kSecCSCheckNestedCode);
-            let self_code_ref = self_code_ptr.as_ref().as_ref().ok_or_else(|| {
-                let error_response = crate::error::ErrorResponse {
-                    code: Some("nullCodeRef".to_string()),
-                    message: Some("Failed to get code reference: null pointer".to_string()),
-                    data: (),
-                };
-                crate::Error::from(crate::error::PluginInvokeError::InvokeRejected(
-                    error_response,
-                ))
-            })?;
-            let status = SecCode::check_validity(self_code_ref, validity_flags, None);
-            if status != 0 {
-                let error_response = crate::error::ErrorResponse {
-                    code: Some(status.to_string()),
-                    message: Some(format!(
-                        "Code signature validation failed: OSStatus {status}"
-                    )),
-                    data: (),
-                };
-                return Err(crate::error::PluginInvokeError::InvokeRejected(error_response).into());
-            }
-
-            Ok(())
-        }
+                })
+                .into()
+            })
     }
 }
 
@@ -168,7 +140,7 @@ pub struct Iap<R: Runtime> {
 
 impl<R: Runtime> Iap<R> {
     pub fn initialize(&self) -> crate::Result<InitializeResponse> {
-        //codesign::is_signature_valid()?;
+        validation::require_bundle()?;
 
         self.plugin.initialize().parse()
     }
@@ -178,7 +150,7 @@ impl<R: Runtime> Iap<R> {
         product_ids: Vec<String>,
         product_type: String,
     ) -> crate::Result<GetProductsResponse> {
-        codesign::is_signature_valid()?;
+        validation::require_bundle()?;
 
         self.plugin
             .getProducts(product_ids, product_type)
@@ -187,7 +159,7 @@ impl<R: Runtime> Iap<R> {
     }
 
     pub async fn purchase(&self, payload: PurchaseRequest) -> crate::Result<Purchase> {
-        codesign::is_signature_valid()?;
+        validation::require_bundle()?;
 
         self.plugin
             .purchase(
@@ -203,7 +175,7 @@ impl<R: Runtime> Iap<R> {
         &self,
         product_type: String,
     ) -> crate::Result<RestorePurchasesResponse> {
-        codesign::is_signature_valid()?;
+        validation::require_bundle()?;
 
         self.plugin.restorePurchases(product_type).await.parse()
     }
@@ -212,7 +184,7 @@ impl<R: Runtime> Iap<R> {
         &self,
         purchase_token: String,
     ) -> crate::Result<AcknowledgePurchaseResponse> {
-        codesign::is_signature_valid()?;
+        validation::require_bundle()?;
 
         self.plugin
             .acknowledgePurchase(purchase_token)
@@ -225,7 +197,7 @@ impl<R: Runtime> Iap<R> {
         product_id: String,
         product_type: String,
     ) -> crate::Result<ProductStatus> {
-        codesign::is_signature_valid()?;
+        validation::require_bundle()?;
 
         self.plugin
             .getProductStatus(product_id, product_type)
