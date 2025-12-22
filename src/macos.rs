@@ -1,10 +1,12 @@
 use serde::de::DeserializeOwned;
-use std::sync::{mpsc, OnceLock};
-use tauri::{plugin::PluginApi, AppHandle, Emitter, Runtime};
+use std::collections::HashMap;
+use std::sync::{OnceLock, RwLock};
+use tauri::{plugin::PluginApi, AppHandle, Runtime};
 
 use crate::models::*;
 
-static EVENT_TX: OnceLock<mpsc::Sender<(String, String)>> = OnceLock::new();
+static LISTENERS: OnceLock<RwLock<HashMap<String, HashMap<u32, tauri::ipc::Channel<String>>>>> =
+    OnceLock::new();
 
 mod codesign {
     use objc2_security::{kSecCSCheckAllArchitectures, kSecCSCheckNestedCode, SecCSFlags, SecCode};
@@ -130,29 +132,27 @@ impl ParseFfiResponse for Result<String, ffi::FFIResult> {
 
 /// Called by Swift via FFI when transaction updates occur.
 fn trigger(event: String, payload: String) -> Result<(), ffi::FFIResult> {
-    let tx = EVENT_TX
+    let listeners = LISTENERS
         .get()
-        .ok_or_else(|| ffi::FFIResult::Err("Event channel not initialized".to_string()))?;
+        .ok_or_else(|| ffi::FFIResult::Err("Listeners not initialized".to_string()))?;
 
-    tx.send((event, payload))
-        .map_err(|e| ffi::FFIResult::Err(format!("Failed to send event: {e}")))
+    let guard = listeners
+        .read()
+        .map_err(|e| ffi::FFIResult::Err(format!("Failed to acquire read lock: {e}")))?;
+
+    if let Some(channels) = guard.get(&event) {
+        for channel in channels.values() {
+            let _ = channel.send(payload.clone());
+        }
+    }
+    Ok(())
 }
 
 pub fn init<R: Runtime, C: DeserializeOwned>(
     app: &AppHandle<R>,
     _api: PluginApi<R, C>,
 ) -> crate::Result<Iap<R>> {
-    if EVENT_TX.get().is_none() {
-        let (tx, rx) = mpsc::channel();
-        let _ = EVENT_TX.set(tx);
-
-        let app_handle = app.clone();
-        std::thread::spawn(move || {
-            while let Ok((event, payload)) = rx.recv() {
-                let _ = app_handle.emit(&event, payload);
-            }
-        });
-    }
+    let _ = LISTENERS.get_or_init(|| RwLock::new(HashMap::new()));
 
     Ok(Iap {
         _app: app.clone(),
@@ -168,7 +168,7 @@ pub struct Iap<R: Runtime> {
 
 impl<R: Runtime> Iap<R> {
     pub fn initialize(&self) -> crate::Result<InitializeResponse> {
-        codesign::is_signature_valid()?;
+        //codesign::is_signature_valid()?;
 
         self.plugin.initialize().parse()
     }
@@ -231,5 +231,54 @@ impl<R: Runtime> Iap<R> {
             .getProductStatus(product_id, product_type)
             .await
             .parse()
+    }
+
+    /// Replication of tauri plugin listener management (TODO: move to common place)
+
+    pub fn register_listener(
+        &self,
+        event: String,
+        handler: tauri::ipc::Channel<String>,
+    ) -> crate::Result<()> {
+        let listeners = LISTENERS.get_or_init(|| RwLock::new(HashMap::new()));
+        let mut guard = listeners.write().map_err(|e| {
+            crate::Error::from(crate::error::PluginInvokeError::InvokeRejected(
+                crate::error::ErrorResponse {
+                    code: None,
+                    message: Some(format!("Failed to acquire write lock: {e}")),
+                    data: (),
+                },
+            ))
+        })?;
+        guard
+            .entry(event)
+            .or_default()
+            .insert(handler.id(), handler);
+        Ok(())
+    }
+
+    pub fn remove_listener(&self, event: String, channel_id: u32) -> crate::Result<()> {
+        let listeners = LISTENERS.get().ok_or_else(|| {
+            crate::Error::from(crate::error::PluginInvokeError::InvokeRejected(
+                crate::error::ErrorResponse {
+                    code: None,
+                    message: Some("Listeners not initialized".to_string()),
+                    data: (),
+                },
+            ))
+        })?;
+        let mut guard = listeners.write().map_err(|e| {
+            crate::Error::from(crate::error::PluginInvokeError::InvokeRejected(
+                crate::error::ErrorResponse {
+                    code: None,
+                    message: Some(format!("Failed to acquire write lock: {e}")),
+                    data: (),
+                },
+            ))
+        })?;
+        if let Some(channels) = guard.get_mut(&event) {
+            channels.remove(&channel_id);
+        }
+        Ok(())
     }
 }

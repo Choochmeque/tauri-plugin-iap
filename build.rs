@@ -3,7 +3,6 @@ use std::{path::PathBuf, process::Command};
 
 const COMMANDS: &[&str] = &[
     "register_listener",
-    "unregister_listener",
     "remove_listener",
     "initialize",
     "get_products",

@@ -50,6 +50,10 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
             commands::restore_purchases,
             commands::acknowledge_purchase,
             commands::get_product_status,
+            #[cfg(desktop)]
+            commands::register_listener,
+            #[cfg(desktop)]
+            commands::remove_listener,
         ])
         .setup(|app, api| {
             #[cfg(target_os = "macos")]

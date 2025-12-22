@@ -5,7 +5,6 @@ Default permissions for the plugin
 #### This default permission set includes the following:
 
 - `allow-register-listener`
-- `allow-unregister-listener`
 - `allow-remove-listener`
 - `allow-initialize`
 - `allow-get-products`
@@ -254,32 +253,6 @@ Enables the restore_purchases command without any pre-configured scope.
 <td>
 
 Denies the restore_purchases command without any pre-configured scope.
-
-</td>
-</tr>
-
-<tr>
-<td>
-
-`iap:allow-unregister-listener`
-
-</td>
-<td>
-
-Enables the unregister_listener command without any pre-configured scope.
-
-</td>
-</tr>
-
-<tr>
-<td>
-
-`iap:deny-unregister-listener`
-
-</td>
-<td>
-
-Denies the unregister_listener command without any pre-configured scope.
 
 </td>
 </tr>

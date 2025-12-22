@@ -12,7 +12,20 @@ enum PurchaseStateValue: Int {
 }
 
 class IapPlugin {
+    private var updateListenerTask: Task<Void, Error>?
+
+    deinit {
+        updateListenerTask?.cancel()
+    }
+
     public func initialize() throws(FFIResult) -> String {
+        // Start listening for transaction updates
+        updateListenerTask = Task {
+            for await update in Transaction.updates {
+                await self.handleTransactionUpdate(update)
+            }
+        }
+
         // StoreKit 2 doesn't require explicit initialization
         return try serializeToJSON(["success": true])
     }
@@ -121,10 +134,7 @@ class IapPlugin {
                 await transaction.finish()
 
                 let purchase = await createPurchaseObject(from: transaction, product: product)
-                let jsonString = try serializeToJSON(purchase)
-                // Emit event for purchase state change
-                try? trigger("purchaseUpdated", jsonString)
-                return jsonString
+                return try serializeToJSON(purchase)
 
             case .unverified(_, _):
                 throw FFIResult.Err(RustString("Transaction verification failed"))
@@ -257,6 +267,26 @@ class IapPlugin {
     }
 
     // MARK: - Helper Functions
+
+    private func handleTransactionUpdate(_ result: VerificationResult<Transaction>) async {
+        switch result {
+        case .verified(let transaction):
+            // Get product details
+            if let product = try? await Product.products(for: [transaction.productID]).first {
+                let purchase = await createPurchaseObject(from: transaction, product: product)
+                if let jsonString = try? serializeToJSON(purchase) {
+                    try? trigger("purchaseUpdated", jsonString)
+                }
+            }
+            
+            // Always finish transactions
+            await transaction.finish()
+            
+        case .unverified(_, _):
+            // Handle unverified transaction
+            break
+        }
+    }
 
     private func serializeToJSON(_ object: JsonObject) throws(FFIResult) -> String {
         guard let data = try? JSONSerialization.data(withJSONObject: object),

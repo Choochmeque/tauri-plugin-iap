@@ -3039,8 +3039,7 @@ checksum = "7da8b5736845d9f2fcb837ea5d9e2628564b3b043a70948a3f0b778838c5fb4f"
 [[package]]
 name = "swift-bridge"
 version = "0.1.58"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "906ac80315f2b4458a2d86187b105390d72f9d03dc397a8e0d746df13a264d7d"
+source = "git+https://github.com/chinedufn/swift-bridge?rev=82b0885#82b08851a9a6ebeed8fd6084f1a41176d904fae5"
 dependencies = [
  "once_cell",
  "swift-bridge-build",
@@ -3051,8 +3050,7 @@ dependencies = [
 [[package]]
 name = "swift-bridge-build"
 version = "0.1.58"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cb5a18540f6d418339940a257f1e94ad4ef93e1c631a5d1345cbe028dd565516"
+source = "git+https://github.com/chinedufn/swift-bridge?rev=82b0885#82b08851a9a6ebeed8fd6084f1a41176d904fae5"
 dependencies = [
  "proc-macro2",
  "swift-bridge-ir",
@@ -3063,8 +3061,7 @@ dependencies = [
 [[package]]
 name = "swift-bridge-ir"
 version = "0.1.58"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "717bdc64f74525b938d29cda5c2d721c593a05bafc1d69066b04f7deb3f5fe5e"
+source = "git+https://github.com/chinedufn/swift-bridge?rev=82b0885#82b08851a9a6ebeed8fd6084f1a41176d904fae5"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -3074,8 +3071,7 @@ dependencies = [
 [[package]]
 name = "swift-bridge-macro"
 version = "0.1.58"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "da276fe2b7f4aa0221ccd8cee5514f2d48a95b5789e2c9558dedbc49c6e99671"
+source = "git+https://github.com/chinedufn/swift-bridge?rev=82b0885#82b08851a9a6ebeed8fd6084f1a41176d904fae5"
 dependencies = [
  "proc-macro2",
  "quote",

@@ -51,3 +51,25 @@ pub(crate) async fn get_product_status<R: Runtime>(
         .get_product_status(payload.product_id, payload.product_type)
         .await
 }
+
+/// Replication of tauri plugin listener management (TODO: move to common place)
+
+#[cfg(desktop)]
+#[command]
+pub(crate) fn register_listener<R: Runtime>(
+    app: AppHandle<R>,
+    event: String,
+    handler: tauri::ipc::Channel<String>,
+) -> crate::Result<()> {
+    app.iap().register_listener(event, handler)
+}
+
+#[cfg(desktop)]
+#[command]
+pub(crate) fn remove_listener<R: Runtime>(
+    app: AppHandle<R>,
+    event: String,
+    channel_id: u32,
+) -> crate::Result<()> {
+    app.iap().remove_listener(event, channel_id)
+}
