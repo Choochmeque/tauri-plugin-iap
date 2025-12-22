@@ -77,19 +77,27 @@ mod ffi {
     }
 
     extern "Swift" {
-        fn initialize() -> Result<String, FFIResult>;
+        #[swift_bridge(Sendable)]
+        type IapPlugin;
+        #[swift_bridge(init, swift_name = "initPlugin")]
+        fn init_plugin() -> IapPlugin;
+
+        fn initialize(&self) -> Result<String, FFIResult>;
         async fn getProducts(
+            &self,
             productIds: Vec<String>,
             productType: String,
         ) -> Result<String, FFIResult>;
         async fn purchase(
+            &self,
             productId: String,
             productType: String,
             offerToken: Option<String>,
         ) -> Result<String, FFIResult>;
-        async fn restorePurchases(productType: String) -> Result<String, FFIResult>;
-        async fn acknowledgePurchase(purchaseToken: String) -> Result<String, FFIResult>;
+        async fn restorePurchases(&self, productType: String) -> Result<String, FFIResult>;
+        async fn acknowledgePurchase(&self, purchaseToken: String) -> Result<String, FFIResult>;
         async fn getProductStatus(
+            &self,
             productId: String,
             productType: String,
         ) -> Result<String, FFIResult>;
@@ -145,17 +153,24 @@ pub fn init<R: Runtime, C: DeserializeOwned>(
             }
         });
     }
-    Ok(Iap(app.clone()))
+
+    Ok(Iap {
+        _app: app.clone(),
+        plugin: ffi::IapPlugin::init_plugin(),
+    })
 }
 
 /// Access to the iap APIs.
-pub struct Iap<R: Runtime>(AppHandle<R>);
+pub struct Iap<R: Runtime> {
+    _app: AppHandle<R>,
+    plugin: ffi::IapPlugin,
+}
 
 impl<R: Runtime> Iap<R> {
     pub fn initialize(&self) -> crate::Result<InitializeResponse> {
         codesign::is_signature_valid()?;
 
-        ffi::initialize().parse()
+        self.plugin.initialize().parse()
     }
 
     pub async fn get_products(
@@ -165,19 +180,23 @@ impl<R: Runtime> Iap<R> {
     ) -> crate::Result<GetProductsResponse> {
         codesign::is_signature_valid()?;
 
-        ffi::getProducts(product_ids, product_type).await.parse()
+        self.plugin
+            .getProducts(product_ids, product_type)
+            .await
+            .parse()
     }
 
     pub async fn purchase(&self, payload: PurchaseRequest) -> crate::Result<Purchase> {
         codesign::is_signature_valid()?;
 
-        ffi::purchase(
-            payload.product_id,
-            payload.product_type,
-            payload.options.and_then(|opts| opts.offer_token),
-        )
-        .await
-        .parse()
+        self.plugin
+            .purchase(
+                payload.product_id,
+                payload.product_type,
+                payload.options.and_then(|opts| opts.offer_token),
+            )
+            .await
+            .parse()
     }
 
     pub async fn restore_purchases(
@@ -186,7 +205,7 @@ impl<R: Runtime> Iap<R> {
     ) -> crate::Result<RestorePurchasesResponse> {
         codesign::is_signature_valid()?;
 
-        ffi::restorePurchases(product_type).await.parse()
+        self.plugin.restorePurchases(product_type).await.parse()
     }
 
     pub async fn acknowledge_purchase(
@@ -195,7 +214,10 @@ impl<R: Runtime> Iap<R> {
     ) -> crate::Result<AcknowledgePurchaseResponse> {
         codesign::is_signature_valid()?;
 
-        ffi::acknowledgePurchase(purchase_token).await.parse()
+        self.plugin
+            .acknowledgePurchase(purchase_token)
+            .await
+            .parse()
     }
 
     pub async fn get_product_status(
@@ -205,7 +227,8 @@ impl<R: Runtime> Iap<R> {
     ) -> crate::Result<ProductStatus> {
         codesign::is_signature_valid()?;
 
-        ffi::getProductStatus(product_id, product_type)
+        self.plugin
+            .getProductStatus(product_id, product_type)
             .await
             .parse()
     }

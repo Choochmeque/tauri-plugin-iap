@@ -14,12 +14,18 @@ private func parseJSON(_ jsonString: String) -> JsonObject? {
     return json
 }
 
-/// Wrapper to avoid name conflict with XCTestCase.initialize
-private func pluginInitialize() throws -> String {
-    try tauri_plugin_iap.initialize()
-}
-
 final class PluginTests: XCTestCase {
+    var plugin: IapPlugin!
+
+    override func setUp() {
+        super.setUp()
+        plugin = initPlugin()
+    }
+
+    override func tearDown() {
+        plugin = nil
+        super.tearDown()
+    }
 
     // MARK: - PurchaseStateValue Tests
 
@@ -39,19 +45,19 @@ final class PluginTests: XCTestCase {
     // MARK: - Initialize Tests
 
     func testInitialize() throws {
-        let jsonString = try pluginInitialize()
+        let jsonString = try plugin.initialize()
         let json = try XCTUnwrap(parseJSON(jsonString))
         XCTAssertEqual(json["success"] as? Bool, true)
     }
 
     func testInitializeIsIdempotent() throws {
         for _ in 0..<5 {
-            XCTAssertNoThrow(try pluginInitialize())
+            XCTAssertNoThrow(try plugin.initialize())
         }
     }
 
     func testInitializeReturnsValidJSON() throws {
-        let jsonString = try pluginInitialize()
+        let jsonString = try plugin.initialize()
         let data = try XCTUnwrap(jsonString.data(using: .utf8))
         XCTAssertNoThrow(try JSONSerialization.jsonObject(with: data))
     }
@@ -59,22 +65,22 @@ final class PluginTests: XCTestCase {
     // MARK: - AcknowledgePurchase Tests
 
     func testAcknowledgePurchase() async throws {
-        let jsonString = try await acknowledgePurchase(purchaseToken: RustString("test_token"))
+        let jsonString = try await plugin.acknowledgePurchase(purchaseToken: RustString("test_token"))
         let json = try XCTUnwrap(parseJSON(jsonString))
         XCTAssertEqual(json["success"] as? Bool, true)
     }
 
     func testAcknowledgePurchaseWithEmptyToken() async throws {
-        _ = try await acknowledgePurchase(purchaseToken: RustString(""))
+        _ = try await plugin.acknowledgePurchase(purchaseToken: RustString(""))
     }
 
     func testAcknowledgePurchaseWithLongToken() async throws {
         let longToken = String(repeating: "token_", count: 100)
-        _ = try await acknowledgePurchase(purchaseToken: RustString(longToken))
+        _ = try await plugin.acknowledgePurchase(purchaseToken: RustString(longToken))
     }
 
     func testAcknowledgePurchaseReturnsValidJSON() async throws {
-        let jsonString = try await acknowledgePurchase(purchaseToken: RustString("any_token"))
+        let jsonString = try await plugin.acknowledgePurchase(purchaseToken: RustString("any_token"))
         let json = try XCTUnwrap(parseJSON(jsonString))
         XCTAssertTrue(json.keys.contains("success"))
     }
@@ -85,9 +91,12 @@ final class PluginTests: XCTestCase {
 @available(macOS 12.0, *)
 final class StoreKitTests: XCTestCase {
     var session: SKTestSession!
+    var plugin: IapPlugin!
 
     override func setUp() async throws {
         try await super.setUp()
+
+        plugin = initPlugin()
 
         let url = try XCTUnwrap(
             Bundle.module.url(forResource: "TestProducts", withExtension: "storekit")
@@ -102,6 +111,7 @@ final class StoreKitTests: XCTestCase {
     override func tearDown() async throws {
         session.clearTransactions()
         session = nil
+        plugin = nil
         try await super.tearDown()
     }
 
@@ -115,7 +125,7 @@ final class StoreKitTests: XCTestCase {
         productIds.push(value: RustString("com.test.removeads"))
         productIds.push(value: RustString("com.test.premium"))
 
-        let jsonString = try await getProducts(productIds: productIds, productType: RustString("inapp"))
+        let jsonString = try await plugin.getProducts(productIds: productIds, productType: RustString("inapp"))
         let json = try XCTUnwrap(parseJSON(jsonString))
         let products = try XCTUnwrap(json["products"] as? [JsonObject])
 
@@ -136,7 +146,7 @@ final class StoreKitTests: XCTestCase {
         let productIds = RustVec<RustString>()
         productIds.push(value: RustString("com.test.premium.monthly"))
 
-        let jsonString = try await getProducts(productIds: productIds, productType: RustString("subs"))
+        let jsonString = try await plugin.getProducts(productIds: productIds, productType: RustString("subs"))
         let json = try XCTUnwrap(parseJSON(jsonString))
         let products = try XCTUnwrap(json["products"] as? [JsonObject])
 
@@ -152,7 +162,7 @@ final class StoreKitTests: XCTestCase {
         let productIds = RustVec<RustString>()
         productIds.push(value: RustString("com.test.nonexistent"))
 
-        let jsonString = try await getProducts(productIds: productIds, productType: RustString("inapp"))
+        let jsonString = try await plugin.getProducts(productIds: productIds, productType: RustString("inapp"))
         let json = try XCTUnwrap(parseJSON(jsonString))
         let products = try XCTUnwrap(json["products"] as? [JsonObject])
 
@@ -162,7 +172,7 @@ final class StoreKitTests: XCTestCase {
     func testGetProductsWithEmptyArray() async throws {
         let productIds = RustVec<RustString>()
 
-        let jsonString = try await getProducts(productIds: productIds, productType: RustString("inapp"))
+        let jsonString = try await plugin.getProducts(productIds: productIds, productType: RustString("inapp"))
         let json = try XCTUnwrap(parseJSON(jsonString))
         let products = try XCTUnwrap(json["products"] as? [JsonObject])
 
@@ -176,7 +186,7 @@ final class StoreKitTests: XCTestCase {
         let productIds = RustVec<RustString>()
         productIds.push(value: RustString("com.test.coins100"))
 
-        let jsonString = try await getProducts(productIds: productIds, productType: RustString("inapp"))
+        let jsonString = try await plugin.getProducts(productIds: productIds, productType: RustString("inapp"))
         let json = try XCTUnwrap(parseJSON(jsonString))
         let products = try XCTUnwrap(json["products"] as? [JsonObject])
 
