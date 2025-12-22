@@ -1,14 +1,7 @@
 use serde::de::DeserializeOwned;
-use std::collections::HashMap;
-use std::sync::{OnceLock, RwLock};
 use tauri::{plugin::PluginApi, AppHandle, Runtime};
 
 use crate::models::*;
-
-type ChannelMap = HashMap<u32, tauri::ipc::Channel<String>>;
-type ListenerMap = HashMap<String, ChannelMap>;
-
-static LISTENERS: OnceLock<RwLock<ListenerMap>> = OnceLock::new();
 
 /// Validation checks for macOS IAP functionality.
 ///
@@ -31,7 +24,7 @@ mod validation {
             })
             .ok_or_else(|| {
                 crate::error::PluginInvokeError::InvokeRejected(crate::error::ErrorResponse {
-                    code: Some("notBundled".to_string()),
+                    code: None,
                     message: Some("IAP requires the app to run from a .app bundle.".to_string()),
                     data: (),
                 })
@@ -104,28 +97,14 @@ impl ParseFfiResponse for Result<String, ffi::FFIResult> {
 
 /// Called by Swift via FFI when transaction updates occur.
 fn trigger(event: String, payload: String) -> Result<(), ffi::FFIResult> {
-    let listeners = LISTENERS
-        .get()
-        .ok_or_else(|| ffi::FFIResult::Err("Listeners not initialized".to_string()))?;
-
-    let guard = listeners
-        .read()
-        .map_err(|e| ffi::FFIResult::Err(format!("Failed to acquire read lock: {e}")))?;
-
-    if let Some(channels) = guard.get(&event) {
-        for channel in channels.values() {
-            let _ = channel.send(payload.clone());
-        }
-    }
-    Ok(())
+    crate::listeners::trigger(&event, payload)
+        .map_err(|e| ffi::FFIResult::Err(format!("Failed to trigger event '{event}': {e}")))
 }
 
 pub fn init<R: Runtime, C: DeserializeOwned>(
     app: &AppHandle<R>,
     _api: PluginApi<R, C>,
 ) -> crate::Result<Iap<R>> {
-    let _ = LISTENERS.get_or_init(|| RwLock::new(HashMap::new()));
-
     Ok(Iap {
         _app: app.clone(),
         plugin: ffi::IapPlugin::init_plugin(),
@@ -203,54 +182,5 @@ impl<R: Runtime> Iap<R> {
             .getProductStatus(product_id, product_type)
             .await
             .parse()
-    }
-
-    // Replication of tauri plugin listener management (TODO: move to common place)
-
-    pub fn register_listener(
-        &self,
-        event: String,
-        handler: tauri::ipc::Channel<String>,
-    ) -> crate::Result<()> {
-        let listeners = LISTENERS.get_or_init(|| RwLock::new(HashMap::new()));
-        let mut guard = listeners.write().map_err(|e| {
-            crate::Error::from(crate::error::PluginInvokeError::InvokeRejected(
-                crate::error::ErrorResponse {
-                    code: None,
-                    message: Some(format!("Failed to acquire write lock: {e}")),
-                    data: (),
-                },
-            ))
-        })?;
-        guard
-            .entry(event)
-            .or_default()
-            .insert(handler.id(), handler);
-        Ok(())
-    }
-
-    pub fn remove_listener(&self, event: String, channel_id: u32) -> crate::Result<()> {
-        let listeners = LISTENERS.get().ok_or_else(|| {
-            crate::Error::from(crate::error::PluginInvokeError::InvokeRejected(
-                crate::error::ErrorResponse {
-                    code: None,
-                    message: Some("Listeners not initialized".to_string()),
-                    data: (),
-                },
-            ))
-        })?;
-        let mut guard = listeners.write().map_err(|e| {
-            crate::Error::from(crate::error::PluginInvokeError::InvokeRejected(
-                crate::error::ErrorResponse {
-                    code: None,
-                    message: Some(format!("Failed to acquire write lock: {e}")),
-                    data: (),
-                },
-            ))
-        })?;
-        if let Some(channels) = guard.get_mut(&event) {
-            channels.remove(&channel_id);
-        }
-        Ok(())
     }
 }

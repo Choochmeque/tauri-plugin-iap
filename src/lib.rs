@@ -16,6 +16,8 @@ mod windows;
 
 mod commands;
 mod error;
+#[cfg(desktop)]
+mod listeners;
 mod models;
 
 pub use error::{Error, Result};
@@ -51,11 +53,13 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
             commands::acknowledge_purchase,
             commands::get_product_status,
             #[cfg(desktop)]
-            commands::register_listener,
+            listeners::register_listener,
             #[cfg(desktop)]
-            commands::remove_listener,
+            listeners::remove_listener,
         ])
         .setup(|app, api| {
+            #[cfg(desktop)]
+            listeners::init();
             #[cfg(target_os = "macos")]
             let iap = macos::init(app, api)?;
             #[cfg(mobile)]

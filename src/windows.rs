@@ -577,32 +577,6 @@ impl<R: Runtime> Iap<R> {
             })
         }
     }
-
-    // Replication of tauri plugin listener management (TODO: move to common place)
-
-    pub fn register_listener(
-        &self,
-        _event: String,
-        _handler: tauri::ipc::Channel<String>,
-    ) -> crate::Result<()> {
-        return Err(crate::Error::PluginInvoke(
-            PluginInvokeError::InvokeRejected(ErrorResponse {
-                code: None,
-                message: Some("Not supported on this platform".to_string()),
-                data: (),
-            }),
-        ));
-    }
-
-    pub fn remove_listener(&self, _event: String, _channel_id: u32) -> crate::Result<()> {
-        return Err(crate::Error::PluginInvoke(
-            PluginInvokeError::InvokeRejected(ErrorResponse {
-                code: None,
-                message: Some("Not supported on this platform".to_string()),
-                data: (),
-            }),
-        ));
-    }
 }
 
 #[cfg(test)]

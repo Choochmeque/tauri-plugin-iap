@@ -69,22 +69,4 @@ impl<R: Runtime> Iap<R> {
             "IAP is not supported on this platform",
         )))
     }
-
-    // Replication of tauri plugin listener management (TODO: move to common place)
-
-    pub fn register_listener(
-        &self,
-        _event: String,
-        _handler: tauri::ipc::Channel<String>,
-    ) -> crate::Result<()> {
-        Err(crate::Error::from(std::io::Error::other(
-            "IAP is not supported on this platform",
-        )))
-    }
-
-    pub fn remove_listener(&self, _event: String, _channel_id: u32) -> crate::Result<()> {
-        Err(crate::Error::from(std::io::Error::other(
-            "IAP is not supported on this platform",
-        )))
-    }
 }
