@@ -30,13 +30,16 @@ class IapPlugin {
         return try serializeToJSON(["success": true])
     }
 
-    public func getProducts(productIds: RustVec<RustString>, productType: RustString) async throws(FFIResult) -> String {
+    public func getProducts(productIds: RustVec<RustString>, productType: RustString)
+        async throws(FFIResult) -> String
+    {
         let ids: [String] = productIds.map { $0.as_str().toString() }
         let products: [Product]
         do {
             products = try await Product.products(for: ids)
         } catch {
-            throw FFIResult.Err(RustString("Failed to fetch products: \(error.localizedDescription)"))
+            throw FFIResult.Err(
+                RustString("Failed to fetch products: \(error.localizedDescription)"))
         }
         var productsArray: [JsonObject] = []
 
@@ -45,7 +48,7 @@ class IapPlugin {
                 "productId": product.id,
                 "title": product.displayName,
                 "description": product.description,
-                "productType": product.type.rawValue
+                "productType": product.type.rawValue,
             ]
 
             // Add pricing information
@@ -63,14 +66,16 @@ class IapPlugin {
                             "offerToken": "",  // macOS doesn't use offer tokens
                             "basePlanId": "",
                             "offerId": introOffer.id ?? "",
-                            "pricingPhases": [[
-                                "formattedPrice": introOffer.displayPrice,
-                                "priceCurrencyCode": getCurrencyCode(for: product),
-                                "priceAmountMicros": 0,  // Not available in StoreKit 2
-                                "billingPeriod": formatSubscriptionPeriod(introOffer.period),
-                                "billingCycleCount": introOffer.periodCount,
-                                "recurrenceMode": 0
-                            ]]
+                            "pricingPhases": [
+                                [
+                                    "formattedPrice": introOffer.displayPrice,
+                                    "priceCurrencyCode": getCurrencyCode(for: product),
+                                    "priceAmountMicros": 0,  // Not available in StoreKit 2
+                                    "billingPeriod": formatSubscriptionPeriod(introOffer.period),
+                                    "billingCycleCount": introOffer.periodCount,
+                                    "recurrenceMode": 0,
+                                ]
+                            ],
                         ]
                         subscriptionOffers.append(offer)
                     }
@@ -80,14 +85,17 @@ class IapPlugin {
                         "offerToken": "",
                         "basePlanId": "",
                         "offerId": "",
-                        "pricingPhases": [[
-                            "formattedPrice": product.displayPrice,
-                            "priceCurrencyCode": getCurrencyCode(for: product),
-                            "priceAmountMicros": 0,
-                            "billingPeriod": formatSubscriptionPeriod(subscription.subscriptionPeriod),
-                            "billingCycleCount": 0,
-                            "recurrenceMode": 1
-                        ]]
+                        "pricingPhases": [
+                            [
+                                "formattedPrice": product.displayPrice,
+                                "priceCurrencyCode": getCurrencyCode(for: product),
+                                "priceAmountMicros": 0,
+                                "billingPeriod": formatSubscriptionPeriod(
+                                    subscription.subscriptionPeriod),
+                                "billingCycleCount": 0,
+                                "recurrenceMode": 1,
+                            ]
+                        ],
                     ]
                     subscriptionOffers.append(regularOffer)
 
@@ -104,14 +112,17 @@ class IapPlugin {
         return try serializeToJSON(["products": productsArray])
     }
 
-    public func purchase(productId: RustString, productType: RustString, offerToken: Optional<RustString>) async throws(FFIResult) -> String {
+    public func purchase(productId: RustString, productType: RustString, offerToken: RustString?)
+        async throws(FFIResult) -> String
+    {
         let id = productId.as_str().toString()
 
         let products: [Product]
         do {
             products = try await Product.products(for: [id])
         } catch {
-            throw FFIResult.Err(RustString("Failed to fetch product: \(error.localizedDescription)"))
+            throw FFIResult.Err(
+                RustString("Failed to fetch product: \(error.localizedDescription)"))
         }
 
         guard let product = products.first else {
@@ -154,7 +165,7 @@ class IapPlugin {
     public func restorePurchases(productType: RustString) async throws(FFIResult) -> String {
         var purchases: [JsonObject] = []
         let requestedType = productType.as_str().toString()
-        
+
         // Get all current entitlements
         for await result in Transaction.currentEntitlements {
             switch result {
@@ -165,20 +176,24 @@ class IapPlugin {
                         let productTypeMatches: Bool
                         switch requestedType {
                         case "subs":
-                            productTypeMatches = (product.type == .autoRenewable || product.type == .nonRenewable)
+                            productTypeMatches =
+                                (product.type == .autoRenewable || product.type == .nonRenewable)
                         case "inapp":
-                            productTypeMatches = (product.type == .consumable || product.type == .nonConsumable)
+                            productTypeMatches =
+                                (product.type == .consumable || product.type == .nonConsumable)
                         default:
                             productTypeMatches = true
                         }
-                        
+
                         if productTypeMatches {
-                            let purchase = await createPurchaseObject(from: transaction, product: product)
+                            let purchase = await createPurchaseObject(
+                                from: transaction, product: product)
                             purchases.append(purchase)
                         }
                     } else {
                         // No filter, include all
-                        let purchase = await createPurchaseObject(from: transaction, product: product)
+                        let purchase = await createPurchaseObject(
+                            from: transaction, product: product)
                         purchases.append(purchase)
                     }
                 }
@@ -187,7 +202,7 @@ class IapPlugin {
                 continue
             }
         }
-        
+
         return try serializeToJSON(["purchases": purchases])
     }
 
@@ -196,29 +211,33 @@ class IapPlugin {
         return try serializeToJSON(["success": true])
     }
 
-    public func getProductStatus(productId: RustString, productType: RustString) async throws(FFIResult) -> String {
+    public func getProductStatus(productId: RustString, productType: RustString)
+        async throws(FFIResult) -> String
+    {
         let id = productId.as_str().toString()
-        
+
         var statusResult: JsonObject = [
             "productId": id,
-            "isOwned": false
+            "isOwned": false,
         ]
-        
+
         // Check current entitlements for the specific product
         for await result in Transaction.currentEntitlements {
             switch result {
             case .verified(let transaction):
                 if transaction.productID == id {
                     statusResult["isOwned"] = true
-                    statusResult["purchaseTime"] = Int(transaction.purchaseDate.timeIntervalSince1970 * 1000)
+                    statusResult["purchaseTime"] = Int(
+                        transaction.purchaseDate.timeIntervalSince1970 * 1000)
                     statusResult["purchaseToken"] = String(transaction.id)
                     statusResult["isAcknowledged"] = true  // Always true on macOS
-                    
+
                     // Check if expired/revoked
                     if let revocationDate = transaction.revocationDate {
                         statusResult["purchaseState"] = PurchaseStateValue.canceled.rawValue
                         statusResult["isOwned"] = false
-                        statusResult["expirationTime"] = Int(revocationDate.timeIntervalSince1970 * 1000)
+                        statusResult["expirationTime"] = Int(
+                            revocationDate.timeIntervalSince1970 * 1000)
                     } else if let expirationDate = transaction.expirationDate {
                         if expirationDate < Date() {
                             statusResult["purchaseState"] = PurchaseStateValue.canceled.rawValue
@@ -226,7 +245,8 @@ class IapPlugin {
                         } else {
                             statusResult["purchaseState"] = PurchaseStateValue.purchased.rawValue
                         }
-                        statusResult["expirationTime"] = Int(expirationDate.timeIntervalSince1970 * 1000)
+                        statusResult["expirationTime"] = Int(
+                            expirationDate.timeIntervalSince1970 * 1000)
                     } else {
                         statusResult["purchaseState"] = PurchaseStateValue.purchased.rawValue
                     }
@@ -241,11 +261,13 @@ class IapPlugin {
                                         statusResult["isAutoRenewing"] = true
                                     } else if status.state == .expired {
                                         statusResult["isAutoRenewing"] = false
-                                        statusResult["purchaseState"] = PurchaseStateValue.canceled.rawValue
+                                        statusResult["purchaseState"] =
+                                            PurchaseStateValue.canceled.rawValue
                                         statusResult["isOwned"] = false
                                     } else if status.state == .inGracePeriod {
                                         statusResult["isAutoRenewing"] = true
-                                        statusResult["purchaseState"] = PurchaseStateValue.purchased.rawValue
+                                        statusResult["purchaseState"] =
+                                            PurchaseStateValue.purchased.rawValue
                                     } else {
                                         statusResult["isAutoRenewing"] = false
                                     }
@@ -254,7 +276,7 @@ class IapPlugin {
                             }
                         }
                     }
-                    
+
                     break
                 }
             case .unverified(_, _):
@@ -262,7 +284,7 @@ class IapPlugin {
                 continue
             }
         }
-        
+
         return try serializeToJSON(statusResult)
     }
 
@@ -278,10 +300,10 @@ class IapPlugin {
                     try? trigger("purchaseUpdated", jsonString)
                 }
             }
-            
+
             // Always finish transactions
             await transaction.finish()
-            
+
         case .unverified(_, _):
             // Handle unverified transaction
             break
@@ -290,7 +312,8 @@ class IapPlugin {
 
     private func serializeToJSON(_ object: JsonObject) throws(FFIResult) -> String {
         guard let data = try? JSONSerialization.data(withJSONObject: object),
-            let jsonString = String(data: data, encoding: .utf8) else {
+            let jsonString = String(data: data, encoding: .utf8)
+        else {
             throw FFIResult.Err(RustString("Failed to serialize JSON"))
         }
         return jsonString
@@ -320,9 +343,11 @@ class IapPlugin {
         }
     }
 
-    private func createPurchaseObject(from transaction: Transaction, product: Product) async -> JsonObject {
+    private func createPurchaseObject(from transaction: Transaction, product: Product) async
+        -> JsonObject
+    {
         var isAutoRenewing = false
-        
+
         // Check if it's an auto-renewable subscription
         if product.type == .autoRenewable {
             // Check subscription status
@@ -335,7 +360,7 @@ class IapPlugin {
                 }
             }
         }
-        
+
         return [
             "orderId": String(transaction.id),
             "originalId": String(transaction.originalID),
@@ -343,11 +368,12 @@ class IapPlugin {
             "productId": transaction.productID,
             "purchaseTime": Int(transaction.purchaseDate.timeIntervalSince1970 * 1000),
             "purchaseToken": String(transaction.id),
-            "purchaseState": transaction.revocationDate == nil ? PurchaseStateValue.purchased.rawValue : PurchaseStateValue.canceled.rawValue,
+            "purchaseState": transaction.revocationDate == nil
+                ? PurchaseStateValue.purchased.rawValue : PurchaseStateValue.canceled.rawValue,
             "isAutoRenewing": isAutoRenewing,
             "isAcknowledged": true,  // Always true on macOS
-            "originalJson": "",      // Not available in StoreKit 2
-            "signature": ""          // Not available in StoreKit 2
+            "originalJson": "",  // Not available in StoreKit 2
+            "signature": "",  // Not available in StoreKit 2
         ]
     }
 }
