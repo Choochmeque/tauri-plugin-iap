@@ -29,12 +29,6 @@ pub fn init<R: Runtime, C: DeserializeOwned>(
 pub struct Iap<R: Runtime>(PluginHandle<R>);
 
 impl<R: Runtime> Iap<R> {
-    pub fn initialize(&self) -> crate::Result<InitializeResponse> {
-        self.0
-            .run_mobile_plugin("initialize", InitializeRequest {})
-            .map_err(Into::into)
-    }
-
     pub async fn get_products(
         &self,
         product_ids: Vec<String>,

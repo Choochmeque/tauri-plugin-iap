@@ -14,12 +14,6 @@ pub fn init<R: Runtime, C: DeserializeOwned>(
 pub struct Iap<R: Runtime>(AppHandle<R>);
 
 impl<R: Runtime> Iap<R> {
-    pub fn initialize(&self) -> crate::Result<InitializeResponse> {
-        Err(crate::Error::from(std::io::Error::other(
-            "IAP is not supported on this platform",
-        )))
-    }
-
     pub async fn get_products(
         &self,
         _product_ids: Vec<String>,

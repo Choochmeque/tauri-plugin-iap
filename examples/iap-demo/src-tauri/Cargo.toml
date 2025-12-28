@@ -21,3 +21,7 @@ tauri-build = { version = "2", default-features = false , features = [] }
 tauri = { version = "2", features = [] }
 tauri-plugin-iap = { path = "../../../" }
 
+# Logging output
+env_logger = { version = "0.11", default-features = false, features = [
+    "humantime",
+] }

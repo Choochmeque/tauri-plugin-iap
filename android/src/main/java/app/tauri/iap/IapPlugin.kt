@@ -1,8 +1,8 @@
 package app.tauri.iap
 
 import android.app.Activity
-import android.util.Log
 import android.webkit.WebView
+import app.tauri.Logger
 import app.tauri.annotation.Command
 import app.tauri.annotation.InvokeArg
 import app.tauri.annotation.TauriPlugin
@@ -15,9 +15,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
-
-@InvokeArg
-class InitializeArgs
 
 @InvokeArg
 class GetProductsArgs {
@@ -93,26 +90,18 @@ class IapPlugin(private val activity: Activity): Plugin(activity), PurchasesUpda
             .enablePendingPurchases(params)
             .enableAutoServiceReconnection()
             .build()
-    }
-    
-    @Command
-    fun initialize(invoke: Invoke) {
-        if (billingClient.isReady) {
-            invoke.resolve(JSObject().put("success", true))
-            return
-        }
-        
+
         billingClient.startConnection(object : BillingClientStateListener {
             override fun onBillingSetupFinished(billingResult: BillingResult) {
                 if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-                    invoke.resolve(JSObject().put("success", true))
+                    Logger.info(TAG, "Billing setup finished successfully")
                 } else {
-                    invoke.reject("Billing setup failed: ${billingResult.debugMessage}")
+                    Logger.error(TAG, "Billing setup failed: ${billingResult.debugMessage}")
                 }
             }
 
             override fun onBillingServiceDisconnected() {
-                Log.d(TAG, "Billing service disconnected")
+                Logger.debug(TAG, "Billing service disconnected")
             }
         })
     }
@@ -426,11 +415,11 @@ class IapPlugin(private val activity: Activity): Plugin(activity), PurchasesUpda
     
     override fun onBillingSetupFinished(billingResult: BillingResult) {
         if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-            Log.d(TAG, "Billing setup finished successfully")
+            Logger.debug(TAG, "Billing setup finished successfully")
         }
     }
-    
+
     override fun onBillingServiceDisconnected() {
-        Log.d(TAG, "Billing service disconnected")
+        Logger.debug(TAG, "Billing service disconnected")
     }
 }

@@ -49,7 +49,6 @@ mod ffi {
         #[swift_bridge(init, swift_name = "initPlugin")]
         fn init_plugin() -> IapPlugin;
 
-        fn initialize(&self) -> Result<String, FFIResult>;
         async fn getProducts(
             &self,
             productIds: Vec<String>,
@@ -118,12 +117,6 @@ pub struct Iap<R: Runtime> {
 }
 
 impl<R: Runtime> Iap<R> {
-    pub fn initialize(&self) -> crate::Result<InitializeResponse> {
-        validation::require_bundle()?;
-
-        self.plugin.initialize().parse()
-    }
-
     pub async fn get_products(
         &self,
         product_ids: Vec<String>,

@@ -316,20 +316,6 @@ final class IapPluginFunctionTests: XCTestCase {
         try await super.tearDown()
     }
 
-    // MARK: - initialize() Tests
-
-    func testInitializeReturnsSuccess() throws {
-        let (invoke, result) = createTestInvoke(command: "initialize", args: [:])
-
-        try plugin.initialize(invoke)
-
-        XCTAssertTrue(result.didResolve)
-        XCTAssertFalse(result.didReject)
-
-        let json = result.getResolvedJson()
-        XCTAssertEqual(json?["success"] as? Bool, true)
-    }
-
     // MARK: - getProducts() Tests
 
     func testGetProductsReturnsProducts() async throws {
