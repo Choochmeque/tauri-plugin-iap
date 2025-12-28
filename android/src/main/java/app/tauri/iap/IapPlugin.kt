@@ -91,19 +91,7 @@ class IapPlugin(private val activity: Activity): Plugin(activity), PurchasesUpda
             .enableAutoServiceReconnection()
             .build()
 
-        billingClient.startConnection(object : BillingClientStateListener {
-            override fun onBillingSetupFinished(billingResult: BillingResult) {
-                if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-                    Logger.info(TAG, "Billing setup finished successfully")
-                } else {
-                    Logger.error(TAG, "Billing setup failed: ${billingResult.debugMessage}", null)
-                }
-            }
-
-            override fun onBillingServiceDisconnected() {
-                Logger.debug(TAG, "Billing service disconnected")
-            }
-        })
+        billingClient.startConnection(this)
     }
     
     @Command
@@ -415,7 +403,9 @@ class IapPlugin(private val activity: Activity): Plugin(activity), PurchasesUpda
     
     override fun onBillingSetupFinished(billingResult: BillingResult) {
         if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-            Logger.debug(TAG, "Billing setup finished successfully")
+            Logger.info(TAG, "Billing setup finished successfully")
+        } else {
+            Logger.error(TAG, "Billing setup failed: ${billingResult.debugMessage}", null)
         }
     }
 
