@@ -96,7 +96,7 @@ class IapPlugin(private val activity: Activity): Plugin(activity), PurchasesUpda
                 if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
                     Logger.info(TAG, "Billing setup finished successfully")
                 } else {
-                    Logger.error(TAG, "Billing setup failed: ${billingResult.debugMessage}")
+                    Logger.error(TAG, "Billing setup failed: ${billingResult.debugMessage}", null)
                 }
             }
 
