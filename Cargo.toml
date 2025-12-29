@@ -9,6 +9,8 @@ exclude = ["/examples", "/dist-js", "/guest-js", "/node_modules"]
 links = "tauri-plugin-iap"
 license = "MIT"
 repository = "https://github.com/Choochmeque/tauri-plugin-iap"
+categories = ["api-bindings"]
+keywords = ["tauri", "tauri-plugin", "iap", "in-app-purchase", "billing"]
 
 [dependencies]
 tauri = { version = "2.7.0" }
