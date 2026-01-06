@@ -162,16 +162,9 @@ export interface PurchaseOptions {
 
 /**
  * Initialize the IAP plugin.
- * Must be called before any other IAP operations.
  *
- * @returns Promise resolving to initialization status
- * @example
- * ```typescript
- * const result = await initialize();
- * if (result.success) {
- *   console.log('IAP initialized successfully');
- * }
- * ```
+ * @deprecated This function is no longer needed. The billing client is now initialized automatically when the plugin loads. This function will be removed in the next major release.
+ * @returns Promise resolving to `{ success: true }` for backward compatibility
  */
 export async function initialize(): Promise<InitializeResponse> {
   return await invoke<InitializeResponse>("plugin:iap|initialize");
