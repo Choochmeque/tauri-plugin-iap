@@ -10,7 +10,6 @@ A Tauri plugin for In-App Purchases (IAP) with support for subscriptions on iOS 
 
 ## Features
 
-- Initialize billing/store connection
 - Query products and subscriptions with detailed pricing
 - Purchase subscriptions with platform-specific features
 - Restore previous purchases
@@ -74,7 +73,6 @@ fn main() {
 
 An example application is available in the [`examples/iap-demo`](examples/iap-demo) directory. The example demonstrates all core IAP functionality with a UI:
 
-- Initialize IAP connection
 - Fetch and display products with pricing
 - Purchase products and subscriptions
 - Restore previous purchases
@@ -109,7 +107,6 @@ The example app provides a fully functional demo with inline documentation for e
 
 ```typescript
 import {
-  initialize,
   getProducts,
   purchase,
   restorePurchases,
@@ -118,9 +115,6 @@ import {
   onPurchaseUpdated,
   PurchaseState
 } from '@choochmeque/tauri-plugin-iap-api';
-
-// Initialize the billing client
-await initialize();
 
 // Get available products
 const products = await getProducts(['subscription_id_1', 'subscription_id_2'], 'subs');
@@ -229,8 +223,10 @@ await listener.unregister();
 
 ## API Reference
 
-### `initialize()`
-Initializes the billing client connection (required on Android, no-op on iOS).
+### `initialize()` *(Deprecated)*
+> **Deprecated**: This function is no longer needed and will be removed in a future major release. The billing client is now initialized automatically when the plugin loads.
+
+Returns `{ success: true }` for backward compatibility.
 
 ### `getProducts(productIds: string[], productType: 'subs' | 'inapp')`
 Fetches product details from the store.

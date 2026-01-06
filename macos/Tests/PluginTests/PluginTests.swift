@@ -42,26 +42,6 @@ final class PluginTests: XCTestCase {
         XCTAssertNil(PurchaseStateValue(rawValue: 99))
     }
 
-    // MARK: - Initialize Tests
-
-    func testInitialize() throws {
-        let jsonString = try plugin.initialize()
-        let json = try XCTUnwrap(parseJSON(jsonString))
-        XCTAssertEqual(json["success"] as? Bool, true)
-    }
-
-    func testInitializeIsIdempotent() throws {
-        for _ in 0..<5 {
-            XCTAssertNoThrow(try plugin.initialize())
-        }
-    }
-
-    func testInitializeReturnsValidJSON() throws {
-        let jsonString = try plugin.initialize()
-        let data = try XCTUnwrap(jsonString.data(using: .utf8))
-        XCTAssertNoThrow(try JSONSerialization.jsonObject(with: data))
-    }
-
     // MARK: - AcknowledgePurchase Tests
 
     func testAcknowledgePurchase() async throws {

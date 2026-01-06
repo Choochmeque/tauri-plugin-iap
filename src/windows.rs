@@ -101,11 +101,6 @@ impl<R: Runtime> Iap<R> {
         let _ = self.app_handle.emit(event, payload);
     }
 
-    pub fn initialize(&self) -> crate::Result<InitializeResponse> {
-        let _ = self.get_store_context()?;
-        Ok(InitializeResponse { success: true })
-    }
-
     pub async fn get_products(
         &self,
         product_ids: Vec<String>,

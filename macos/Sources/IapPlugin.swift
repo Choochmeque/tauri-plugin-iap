@@ -14,20 +14,17 @@ enum PurchaseStateValue: Int {
 class IapPlugin {
     private var updateListenerTask: Task<Void, Error>?
 
-    deinit {
-        updateListenerTask?.cancel()
-    }
-
-    public func initialize() throws(FFIResult) -> String {
+    init() {
         // Start listening for transaction updates
         updateListenerTask = Task {
             for await update in Transaction.updates {
                 await self.handleTransactionUpdate(update)
             }
         }
+    }
 
-        // StoreKit 2 doesn't require explicit initialization
-        return try serializeToJSON(["success": true])
+    deinit {
+        updateListenerTask?.cancel()
     }
 
     public func getProducts(productIds: RustVec<RustString>, productType: RustString)

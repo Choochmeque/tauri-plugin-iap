@@ -3,8 +3,6 @@ import UIKit
 import WebKit
 import StoreKit
 
-class InitializeArgs: Decodable {}
-
 class GetProductsArgs: Decodable {
     let productIds: [String]
     let productType: String
@@ -57,12 +55,7 @@ class IapPlugin: Plugin {
     deinit {
         updateListenerTask?.cancel()
     }
-    
-    @objc public func initialize(_ invoke: Invoke) throws {
-        // StoreKit 2 doesn't require explicit initialization
-        invoke.resolve(["success": true])
-    }
-    
+
     @objc public func getProducts(_ invoke: Invoke) async throws {
         let args = try invoke.parseArgs(GetProductsArgs.self)
 
@@ -422,9 +415,6 @@ func initPlugin() -> Plugin {
     } else {
         // Return a dummy plugin for older iOS versions
         class DummyPlugin: Plugin {
-            @objc func initialize(_ invoke: Invoke) {
-                invoke.reject("IAP requires iOS 15.0 or later")
-            }
             @objc func getProducts(_ invoke: Invoke) {
                 invoke.reject("IAP requires iOS 15.0 or later")
             }

@@ -1,7 +1,6 @@
 <script>
   import { onMount, onDestroy } from 'svelte'
   import {
-    initialize,
     getProducts,
     purchase,
     restorePurchases,
@@ -11,7 +10,6 @@
   } from 'tauri-plugin-iap-api'
 
 	let response = ''
-	let isInitialized = false
 	let products = []
 	let productIds = ''
 	let productType = 'inapp'
@@ -56,16 +54,6 @@
 			}
 		}
 	})
-
-	async function handleInitialize() {
-		try {
-			await initialize()
-			isInitialized = true
-			updateResponse('✓ IAP initialized successfully')
-		} catch (error) {
-			updateResponse('✗ Initialize failed: ' + JSON.stringify(error))
-		}
-	}
 
 	async function handleGetProducts() {
 		if (!productIds.trim()) {
@@ -131,15 +119,7 @@
   </div>
 
   <div class="section">
-    <h2>1. Initialize IAP</h2>
-    <p class="doc">Initialize the IAP connection. Must be called before any other operations.</p>
-    <button on:click={handleInitialize} disabled={isInitialized}>
-      {isInitialized ? '✓ Initialized' : 'Initialize IAP'}
-    </button>
-  </div>
-
-  <div class="section">
-    <h2>2. Get Products</h2>
+    <h2>1. Get Products</h2>
     <p class="doc">Fetch product information from the store. Enter product IDs separated by commas.</p>
     <div class="form-group">
       <label>
@@ -148,17 +128,16 @@
           type="text"
           bind:value={productIds}
           placeholder="com.example.product1, com.example.product2"
-          disabled={!isInitialized}
         />
       </label>
       <label>
         Product Type:
-        <select bind:value={productType} disabled={!isInitialized}>
+        <select bind:value={productType}>
           <option value="inapp">In-App Purchase</option>
           <option value="subs">Subscription</option>
         </select>
       </label>
-      <button on:click={handleGetProducts} disabled={!isInitialized}>Get Products</button>
+      <button on:click={handleGetProducts}>Get Products</button>
     </div>
     {#if products.length > 0}
       <div class="products-list">
@@ -176,7 +155,7 @@
   </div>
 
   <div class="section">
-    <h2>3. Purchase Product</h2>
+    <h2>2. Purchase Product</h2>
     <p class="doc">Initiate a purchase for a specific product. Enter the product ID to purchase.</p>
     <div class="form-group">
       <label>
@@ -185,19 +164,18 @@
           type="text"
           bind:value={selectedProductId}
           placeholder="com.example.product"
-          disabled={!isInitialized}
         />
       </label>
-      <button on:click={handlePurchase} disabled={!isInitialized}>Purchase</button>
+      <button on:click={handlePurchase}>Purchase</button>
     </div>
     <p class="note"><strong>Android:</strong> For subscriptions, you may need to provide an offer token.</p>
     <p class="note"><strong>iOS:</strong> Optionally provide an appAccountToken (UUID) for user tracking.</p>
   </div>
 
   <div class="section">
-    <h2>4. Restore Purchases</h2>
+    <h2>3. Restore Purchases</h2>
     <p class="doc">Restore previously purchased products. Useful for transferring purchases to a new device.</p>
-    <button on:click={handleRestorePurchases} disabled={!isInitialized}>Restore Purchases</button>
+    <button on:click={handleRestorePurchases}>Restore Purchases</button>
     {#if purchaseHistory.length > 0}
       <div class="purchases-list">
         <h4>Purchase History:</h4>
@@ -214,7 +192,7 @@
   </div>
 
   <div class="section">
-    <h2>5. Check Product Status</h2>
+    <h2>4. Check Product Status</h2>
     <p class="doc">Check if the user owns a specific product and get subscription details.</p>
     <div class="form-group">
       <label>
@@ -223,10 +201,9 @@
           type="text"
           bind:value={statusProductId}
           placeholder="com.example.product"
-          disabled={!isInitialized}
         />
       </label>
-      <button on:click={handleGetProductStatus} disabled={!isInitialized}>Check Status</button>
+      <button on:click={handleGetProductStatus}>Check Status</button>
     </div>
     {#if productStatus}
       <div class="status-card">
