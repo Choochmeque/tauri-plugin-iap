@@ -20,7 +20,7 @@ thiserror = "2"
 log = "0.4"
 
 [target.'cfg(target_os = "macos")'.dependencies]
-swift-bridge = { version = "0.1", features = ["async"], git = "https://github.com/chinedufn/swift-bridge", rev = "82b0885"}
+swift-bridge = { version = "0.1", features = ["async"] }
 
 [target.'cfg(target_os = "windows")'.dependencies]
 windows = { version = "0.61", features = [
@@ -35,4 +35,4 @@ windows-collections = "0.2"
 tauri-plugin = { version = "2.3.0", features = ["build"] }
 
 [target.'cfg(target_os = "macos")'.build-dependencies]
-swift-bridge-build = { version = "0.1", git = "https://github.com/chinedufn/swift-bridge", rev = "82b0885" }
+swift-bridge-build = "0.1"
