@@ -1,0 +1,395 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 63;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		17596D698DF559196D3E1D48 /* WebKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F991E343D6A664ACFE0A2266 /* WebKit.framework */; };
+		223AB47A5B0A12A1269E04A7 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DABA67631F1BC477E5376471 /* Security.framework */; };
+		24D4C56CA3AFB39425411815 /* MetalKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7D63CB206931DCA7AD73510D /* MetalKit.framework */; };
+		599051E29720CCDBC2DFA053 /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FEE42963B85C73F7E5442759 /* CoreGraphics.framework */; };
+		6413A06EE54D0FC6788149C2 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = FB016EC457B7A35EACF75189 /* Assets.xcassets */; };
+		76BA2AD447FDC47055B9259D /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D31766AC665302A1BB0F0B98 /* Metal.framework */; };
+		A6344F1BD9093B8C7641A6B2 /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3677DC021177E532EB236C3A /* QuartzCore.framework */; };
+		E1244E863CB7A3D4D9CF69E3 /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9AD3AED29AD20EF432BCD28F /* AppKit.framework */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		3677DC021177E532EB236C3A /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
+		4C93B054AA179FACE0F56CD0 /* iap-demo_macOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; name = "iap-demo_macOS.app"; path = "iap-demo.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		6F1E836185A696CB0BBE0AE9 /* lib.rs */ = {isa = PBXFileReference; lastKnownFileType = text; path = lib.rs; sourceTree = "<group>"; };
+		7D63CB206931DCA7AD73510D /* MetalKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MetalKit.framework; path = System/Library/Frameworks/MetalKit.framework; sourceTree = SDKROOT; };
+		9AD3AED29AD20EF432BCD28F /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = System/Library/Frameworks/AppKit.framework; sourceTree = SDKROOT; };
+		AD1FA14D5944893743FE6B94 /* iap-demo_macOS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "iap-demo_macOS.entitlements"; sourceTree = "<group>"; };
+		C4F58B8C2F10073B0083B6B0 /* TestProducts.storekit */ = {isa = PBXFileReference; lastKnownFileType = text; path = TestProducts.storekit; sourceTree = "<group>"; };
+		D31766AC665302A1BB0F0B98 /* Metal.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Metal.framework; path = System/Library/Frameworks/Metal.framework; sourceTree = SDKROOT; };
+		DABA67631F1BC477E5376471 /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
+		E1C77EAD8CB390E1843893FC /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		F428C1201440A7809F35B42D /* main.rs */ = {isa = PBXFileReference; lastKnownFileType = text; path = main.rs; sourceTree = "<group>"; };
+		F991E343D6A664ACFE0A2266 /* WebKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WebKit.framework; path = System/Library/Frameworks/WebKit.framework; sourceTree = SDKROOT; };
+		FB016EC457B7A35EACF75189 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		FEE42963B85C73F7E5442759 /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		966DB54F7DFFC042C717BADB /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E1244E863CB7A3D4D9CF69E3 /* AppKit.framework in Frameworks */,
+				599051E29720CCDBC2DFA053 /* CoreGraphics.framework in Frameworks */,
+				76BA2AD447FDC47055B9259D /* Metal.framework in Frameworks */,
+				24D4C56CA3AFB39425411815 /* MetalKit.framework in Frameworks */,
+				A6344F1BD9093B8C7641A6B2 /* QuartzCore.framework in Frameworks */,
+				223AB47A5B0A12A1269E04A7 /* Security.framework in Frameworks */,
+				17596D698DF559196D3E1D48 /* WebKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		0E49AA695CFBB204935E49DE = {
+			isa = PBXGroup;
+			children = (
+				C4F58B8C2F10073B0083B6B0 /* TestProducts.storekit */,
+				FB016EC457B7A35EACF75189 /* Assets.xcassets */,
+				8E4607899C58B2D6F0A41CAD /* iap-demo_macOS */,
+				7C3865EC6AC03A56D319F3C2 /* src */,
+				DE5AE33DB8E032448DA551FB /* Frameworks */,
+				4B0A7BFF135967E1EF56A78C /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		4B0A7BFF135967E1EF56A78C /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				4C93B054AA179FACE0F56CD0 /* iap-demo_macOS.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		7C3865EC6AC03A56D319F3C2 /* src */ = {
+			isa = PBXGroup;
+			children = (
+				6F1E836185A696CB0BBE0AE9 /* lib.rs */,
+				F428C1201440A7809F35B42D /* main.rs */,
+			);
+			name = src;
+			path = ../../src;
+			sourceTree = "<group>";
+		};
+		8E4607899C58B2D6F0A41CAD /* iap-demo_macOS */ = {
+			isa = PBXGroup;
+			children = (
+				AD1FA14D5944893743FE6B94 /* iap-demo_macOS.entitlements */,
+				E1C77EAD8CB390E1843893FC /* Info.plist */,
+			);
+			path = "iap-demo_macOS";
+			sourceTree = "<group>";
+		};
+		DE5AE33DB8E032448DA551FB /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				9AD3AED29AD20EF432BCD28F /* AppKit.framework */,
+				FEE42963B85C73F7E5442759 /* CoreGraphics.framework */,
+				D31766AC665302A1BB0F0B98 /* Metal.framework */,
+				7D63CB206931DCA7AD73510D /* MetalKit.framework */,
+				3677DC021177E532EB236C3A /* QuartzCore.framework */,
+				DABA67631F1BC477E5376471 /* Security.framework */,
+				F991E343D6A664ACFE0A2266 /* WebKit.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		7A1572C6804FEA1AA23E7890 /* iap-demo_macOS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 0B15CD479BC68D6CC30504FB /* Build configuration list for PBXNativeTarget "iap-demo_macOS" */;
+			buildPhases = (
+				5E262F6975769FE8CE740577 /* Sources */,
+				133A5EB1AE9A11714ABA076B /* Build and Copy Rust Binary */,
+				95D6490AEEBC569A72E1AF51 /* Resources */,
+				966DB54F7DFFC042C717BADB /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "iap-demo_macOS";
+			packageProductDependencies = (
+			);
+			productName = "iap-demo_macOS";
+			productReference = 4C93B054AA179FACE0F56CD0 /* iap-demo_macOS.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		4AB621FF6D9004BF973ED089 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+			};
+			buildConfigurationList = 806EB286063B6A1F0586AFA4 /* Build configuration list for PBXProject "iap-demo" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 0E49AA695CFBB204935E49DE;
+			minimizedProjectReferenceProxies = 1;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				7A1572C6804FEA1AA23E7890 /* iap-demo_macOS */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		95D6490AEEBC569A72E1AF51 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				6413A06EE54D0FC6788149C2 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		133A5EB1AE9A11714ABA076B /* Build and Copy Rust Binary */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Build and Copy Rust Binary";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "${PROJECT_DIR}/scripts/build-rust.sh ${CONFIGURATION} \"${ARCHS}\"";
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		5E262F6975769FE8CE740577 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		0B6FB934651C87C2D670E2A5 /* release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = release;
+		};
+		4BC1388903B92E615E108213 /* debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = (
+					arm64,
+					x86_64,
+				);
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ALLOW_ENTITLEMENTS_MODIFICATION = YES;
+				CODE_SIGN_ENTITLEMENTS = "iap-demo_macOS/iap-demo_macOS.entitlements";
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 0.1.0;
+				INFOPLIST_FILE = "iap-demo_macOS/Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.tauri.dev;
+				PRODUCT_NAME = "iap-demo";
+				SDKROOT = macosx;
+				VALID_ARCHS = "arm64 x86_64";
+			};
+			name = debug;
+		};
+		B3559932CC7B15AC5939A2A9 /* release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = (
+					arm64,
+					x86_64,
+				);
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ALLOW_ENTITLEMENTS_MODIFICATION = YES;
+				CODE_SIGN_ENTITLEMENTS = "iap-demo_macOS/iap-demo_macOS.entitlements";
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 0.1.0;
+				INFOPLIST_FILE = "iap-demo_macOS/Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.tauri.dev;
+				PRODUCT_NAME = "iap-demo";
+				SDKROOT = macosx;
+				VALID_ARCHS = "arm64 x86_64";
+			};
+			name = release;
+		};
+		CDEE8C4A4DA7BD3EBFC607C0 /* debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		0B15CD479BC68D6CC30504FB /* Build configuration list for PBXNativeTarget "iap-demo_macOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				4BC1388903B92E615E108213 /* debug */,
+				B3559932CC7B15AC5939A2A9 /* release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = debug;
+		};
+		806EB286063B6A1F0586AFA4 /* Build configuration list for PBXProject "iap-demo" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CDEE8C4A4DA7BD3EBFC607C0 /* debug */,
+				0B6FB934651C87C2D670E2A5 /* release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 4AB621FF6D9004BF973ED089 /* Project object */;
+}
