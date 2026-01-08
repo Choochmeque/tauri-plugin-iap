@@ -29,7 +29,7 @@ windows = { version = "0.61", features = [
     "Services_Store",
     "System",
 ] }
-windows-collections = "0.2"
+windows-collections = "0.3"
 
 [build-dependencies]
 tauri-plugin = { version = "2", features = ["build"] }
