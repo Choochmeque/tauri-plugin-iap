@@ -15,7 +15,7 @@
     "tauri-plugin-iap-api": "file:../../"
   },
   "devDependencies": {
-    "@sveltejs/vite-plugin-svelte": "^6.0.0",
+    "@sveltejs/vite-plugin-svelte": "^6.2.4",
     "svelte": "^5.46.1",
     "vite": "^7.0.0",
     "@tauri-apps/cli": "^2.9.5",
