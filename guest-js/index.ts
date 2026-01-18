@@ -88,6 +88,8 @@ export interface Purchase {
   signature: string;
   /** Original transaction ID. Used to link renewals and restores to the original purchase. (iOS/macOS only) */
   originalId?: string;
+  /** JWS representation of the signed transaction for server-side validation. (iOS/macOS only) */
+  jwsRepresentation?: string;
 }
 
 /**

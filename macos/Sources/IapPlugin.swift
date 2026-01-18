@@ -141,7 +141,7 @@ class IapPlugin {
                 // Finish the transaction
                 await transaction.finish()
 
-                let purchase = await createPurchaseObject(from: transaction, product: product)
+                let purchase = try await createPurchaseObject(from: verification, product: product)
                 return try serializeToJSON(purchase)
 
             case .unverified(_, _):
@@ -183,14 +183,12 @@ class IapPlugin {
                         }
 
                         if productTypeMatches {
-                            let purchase = await createPurchaseObject(
-                                from: transaction, product: product)
+                            let purchase = try await createPurchaseObject(from: result, product: product)
                             purchases.append(purchase)
                         }
                     } else {
                         // No filter, include all
-                        let purchase = await createPurchaseObject(
-                            from: transaction, product: product)
+                        let purchase = try await createPurchaseObject(from: result, product: product)
                         purchases.append(purchase)
                     }
                 }
@@ -292,8 +290,8 @@ class IapPlugin {
         case .verified(let transaction):
             // Get product details
             if let product = try? await Product.products(for: [transaction.productID]).first {
-                let purchase = await createPurchaseObject(from: transaction, product: product)
-                if let jsonString = try? serializeToJSON(purchase) {
+                if let purchase = try? await createPurchaseObject(from: result, product: product),
+                   let jsonString = try? serializeToJSON(purchase) {
                     try? trigger("purchaseUpdated", jsonString)
                 }
             }
@@ -340,9 +338,13 @@ class IapPlugin {
         }
     }
 
-    private func createPurchaseObject(from transaction: Transaction, product: Product) async
+    private func createPurchaseObject(from verificationResult: VerificationResult<Transaction>, product: Product) async throws(FFIResult)
         -> JsonObject
     {
+        guard case .verified(let transaction) = verificationResult else {
+            throw FFIResult.Err(RustString("Transaction not verified"))
+        }
+
         var isAutoRenewing = false
 
         // Check if it's an auto-renewable subscription
@@ -361,6 +363,7 @@ class IapPlugin {
         return [
             "orderId": String(transaction.id),
             "originalId": String(transaction.originalID),
+            "jwsRepresentation": verificationResult.jwsRepresentation,
             "packageName": Bundle.main.bundleIdentifier ?? "",
             "productId": transaction.productID,
             "purchaseTime": Int(transaction.purchaseDate.timeIntervalSince1970 * 1000),

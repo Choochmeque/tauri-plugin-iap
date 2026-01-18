@@ -163,10 +163,10 @@ class IapPlugin: Plugin {
                 case .verified(let transaction):
                     // Finish the transaction
                     await transaction.finish()
-                    
-                    let purchase = await createPurchaseObject(from: transaction, product: product)
+
+                    let purchase = try await createPurchaseObject(from: verification, product: product)
                     invoke.resolve(purchase)
-                    
+
                 case .unverified(_, _):
                     invoke.reject("Transaction verification failed")
                 }
@@ -206,14 +206,14 @@ class IapPlugin: Plugin {
                             default:
                                 productTypeMatches = true
                             }
-                            
+
                             if productTypeMatches {
-                                let purchase = await createPurchaseObject(from: transaction, product: product)
+                                let purchase = try await createPurchaseObject(from: result, product: product)
                                 purchases.append(purchase)
                             }
                         } else {
                             // No filter, include all
-                            let purchase = await createPurchaseObject(from: transaction, product: product)
+                            let purchase = try await createPurchaseObject(from: result, product: product)
                             purchases.append(purchase)
                         }
                     }
@@ -337,24 +337,28 @@ class IapPlugin: Plugin {
         case .verified(let transaction):
             // Get product details
             if let product = try? await Product.products(for: [transaction.productID]).first {
-                let purchase = await createPurchaseObject(from: transaction, product: product)
-                
-                // Emit event - convert to JSObject-compatible format
-                trigger("purchaseUpdated", data: purchase as! JSObject)
+                if let purchase = try? await createPurchaseObject(from: result, product: product) {
+                    // Emit event - convert to JSObject-compatible format
+                    trigger("purchaseUpdated", data: purchase as! JSObject)
+                }
             }
-            
+
             // Always finish transactions
             await transaction.finish()
-            
+
         case .unverified(_, _):
             // Handle unverified transaction
             break
         }
     }
     
-    private func createPurchaseObject(from transaction: Transaction, product: Product) async -> JsonObject {
+    private func createPurchaseObject(from verificationResult: VerificationResult<Transaction>, product: Product) async throws -> JsonObject {
+        guard case .verified(let transaction) = verificationResult else {
+            throw NSError(domain: "IapPlugin", code: -1, userInfo: [NSLocalizedDescriptionKey: "Transaction not verified"])
+        }
+
         var isAutoRenewing = false
-        
+
         // Check if it's an auto-renewable subscription
         if product.type == .autoRenewable {
             // Check subscription status
@@ -367,10 +371,11 @@ class IapPlugin: Plugin {
                 }
             }
         }
-        
+
         return [
             "orderId": String(transaction.id),
             "originalId": String(transaction.originalID),
+            "jwsRepresentation": verificationResult.jwsRepresentation,
             "packageName": Bundle.main.bundleIdentifier ?? "",
             "productId": transaction.productID,
             "purchaseTime": Int(transaction.purchaseDate.timeIntervalSince1970 * 1000),
