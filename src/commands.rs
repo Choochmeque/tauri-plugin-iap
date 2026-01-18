@@ -5,8 +5,7 @@ use crate::{IapExt, Result};
 
 #[command]
 pub(crate) async fn initialize<R: Runtime>(_app: AppHandle<R>) -> Result<InitializeResponse> {
-    log::warn!("initialize() is deprecated and no longer needed. In the next major release it will return a deprecation error, and will be removed in the following major release.");
-    Ok(InitializeResponse { success: true })
+    Err(std::io::Error::other("initialize() is deprecated and no longer needed. The billing client initializes automatically.").into())
 }
 
 #[command]

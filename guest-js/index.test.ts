@@ -9,7 +9,6 @@ import {
   getProductStatus,
   onPurchaseUpdated,
   PurchaseState,
-  type InitializeResponse,
   type GetProductsResponse,
   type Purchase,
   type RestorePurchasesResponse,
@@ -37,30 +36,13 @@ describe("IAP Plugin", () => {
   });
 
   describe("initialize", () => {
-    it("should call invoke with correct command", async () => {
-      const mockResponse: InitializeResponse = { success: true };
-      vi.mocked(invoke).mockResolvedValue(mockResponse);
-
-      const result = await initialize();
-
-      expect(invoke).toHaveBeenCalledWith("plugin:iap|initialize");
-      expect(result).toEqual(mockResponse);
-    });
-
-    it("should handle initialization failure", async () => {
-      const mockResponse: InitializeResponse = { success: false };
-      vi.mocked(invoke).mockResolvedValue(mockResponse);
-
-      const result = await initialize();
-
-      expect(result.success).toBe(false);
-    });
-
-    it("should propagate errors from invoke", async () => {
-      const error = new Error("Initialization failed");
+    it("should reject with deprecation error", async () => {
+      const error = new Error(
+        "initialize() is deprecated and no longer needed. The billing client initializes automatically.",
+      );
       vi.mocked(invoke).mockRejectedValue(error);
 
-      await expect(initialize()).rejects.toThrow("Initialization failed");
+      await expect(initialize()).rejects.toThrow("deprecated");
     });
   });
 

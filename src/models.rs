@@ -98,6 +98,8 @@ pub struct Purchase {
     pub original_json: String,
     pub signature: String,
     pub original_id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub jws_representation: Option<String>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -361,6 +363,7 @@ mod tests {
             original_json: "{}".to_string(),
             signature: "sig".to_string(),
             original_id: None,
+            jws_representation: Some("test_jws".to_string()),
         };
 
         let json = serde_json::to_string(&purchase).expect("Failed to serialize Purchase");

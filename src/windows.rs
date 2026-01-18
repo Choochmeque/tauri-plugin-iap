@@ -402,6 +402,7 @@ impl<R: Runtime> Iap<R> {
             ),
             signature: String::new(), // Windows doesn't provide signatures like Android
             original_id: None, // Windows doesn't have original transaction IDs like iOS/macOS
+            jws_representation: None, // Windows doesn't have JWS like iOS/macOS
         };
 
         // Emit event for purchase state change
@@ -494,6 +495,7 @@ impl<R: Runtime> Iap<R> {
             ),
             signature: String::new(),
             original_id: None,
+            jws_representation: None, // Windows doesn't have JWS like iOS/macOS
         })
     }
 
