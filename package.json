@@ -1,6 +1,6 @@
 {
   "name": "@choochmeque/tauri-plugin-iap-api",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "license": "MIT",
   "author": "You",
   "description": "A Tauri v2 plugin that enables In-App Purchases (IAP)",
