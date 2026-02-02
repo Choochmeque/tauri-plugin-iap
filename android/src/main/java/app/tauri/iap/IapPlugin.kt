@@ -29,6 +29,8 @@ class PurchaseArgs {
     var offerToken: String? = null
     var obfuscatedAccountId: String? = null
     var obfuscatedProfileId: String? = null
+    var oldPurchaseToken: String? = null
+    var subscriptionReplacementMode: Int? = null
 }
 
 @InvokeArg
@@ -223,7 +225,20 @@ class IapPlugin(private val activity: Activity): Plugin(activity), PurchasesUpda
                 args.obfuscatedProfileId?.let { profileId ->
                     billingFlowParamsBuilder.setObfuscatedProfileId(profileId)
                 }
-                
+
+                // Add subscription update params for upgrades/downgrades
+                args.oldPurchaseToken?.let { oldToken ->
+                    val replacementMode = args.subscriptionReplacementMode
+                        ?: BillingFlowParams.SubscriptionUpdateParams.ReplacementMode.WITH_TIME_PRORATION
+
+                    val subscriptionUpdateParams = BillingFlowParams.SubscriptionUpdateParams.newBuilder()
+                        .setOldPurchaseToken(oldToken)
+                        .setSubscriptionReplacementMode(replacementMode)
+                        .build()
+
+                    billingFlowParamsBuilder.setSubscriptionUpdateParams(subscriptionUpdateParams)
+                }
+
                 val billingFlowParams = billingFlowParamsBuilder.build()
                 
                 val billingResult = billingClient.launchBillingFlow(activity, billingFlowParams)
