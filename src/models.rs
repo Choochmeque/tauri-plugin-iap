@@ -61,8 +61,9 @@ pub struct GetProductsResponse {
     pub products: Vec<Product>,
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Default, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
+#[non_exhaustive]
 pub struct PurchaseOptions {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub offer_token: Option<String>,
@@ -457,10 +458,7 @@ mod tests {
             .options
             .expect("Expected PurchaseOptions to be present");
         assert_eq!(opts.offer_token, Some("token".to_string()));
-        assert_eq!(
-            opts.old_purchase_token,
-            Some("old_token_123".to_string())
-        );
+        assert_eq!(opts.old_purchase_token, Some("old_token_123".to_string()));
         assert_eq!(opts.subscription_replacement_mode, Some(2));
     }
 
