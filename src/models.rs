@@ -61,9 +61,8 @@ pub struct GetProductsResponse {
     pub products: Vec<Product>,
 }
 
-#[derive(Debug, Clone, Default, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
-#[non_exhaustive]
 pub struct PurchaseOptions {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub offer_token: Option<String>,
