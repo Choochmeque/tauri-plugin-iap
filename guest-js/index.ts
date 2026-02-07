@@ -149,6 +149,24 @@ export interface ProductStatus {
 }
 
 /**
+ * Google Play subscription replacement modes for upgrades/downgrades.
+ * Used with `subscriptionReplacementMode` in `PurchaseOptions`.
+ * @see https://developer.android.com/reference/com/android/billingclient/api/BillingFlowParams.SubscriptionUpdateParams.ReplacementMode
+ */
+export enum SubscriptionReplacementMode {
+  /** Replacement takes effect when the old plan expires, and the new price is charged at the same time. */
+  DEFERRED = 6,
+  /** Replacement takes effect immediately. The billing cycle remains the same. The remaining value from the old price is prorated for the new plan. */
+  WITH_TIME_PRORATION = 1,
+  /** Replacement takes effect immediately. The new price is charged immediately and in full. Any remaining period from the old plan is used to extend the new billing date. */
+  CHARGE_FULL_PRICE = 5,
+  /** Replacement takes effect immediately. The new plan price is reduced by the prorated cost of the old plan for the remaining period. */
+  CHARGE_PRORATED_PRICE = 2,
+  /** Replacement takes effect immediately with no proration. The user is charged full price for the new plan. */
+  WITHOUT_PRORATION = 3,
+}
+
+/**
  * Optional parameters for purchase requests
  */
 export interface PurchaseOptions {
@@ -160,6 +178,20 @@ export interface PurchaseOptions {
   obfuscatedProfileId?: string;
   /** App account token - must be a valid UUID string (iOS only) */
   appAccountToken?: string;
+  /**
+   * Purchase token of the existing subscription to replace (Android only).
+   * When set, the purchase becomes a subscription upgrade/downgrade.
+   * Obtain this from a previous purchase's `purchaseToken` field.
+   */
+  oldPurchaseToken?: string;
+  /**
+   * Replacement mode for subscription upgrades/downgrades (Android only).
+   * Determines how the transition between old and new subscription is handled.
+   * Use values from the `SubscriptionReplacementMode` enum.
+   * Defaults to `WITH_TIME_PRORATION` if not specified.
+   * @see SubscriptionReplacementMode
+   */
+  subscriptionReplacementMode?: SubscriptionReplacementMode;
 }
 
 /**
@@ -220,6 +252,13 @@ export async function getProducts(
  *   offerToken: 'offer_token_here',
  *   obfuscatedAccountId: 'user_account_id',
  *   obfuscatedProfileId: 'user_profile_id'
+ * });
+ *
+ * // Subscription upgrade/downgrade (Android)
+ * const purchase = await purchase('com.example.premium', 'subs', {
+ *   offerToken: 'new_plan_offer_token',
+ *   oldPurchaseToken: 'existing_subscription_purchase_token',
+ *   subscriptionReplacementMode: SubscriptionReplacementMode.WITH_TIME_PRORATION
  * });
  * ```
  */

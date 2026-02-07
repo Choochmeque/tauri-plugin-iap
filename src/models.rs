@@ -72,6 +72,15 @@ pub struct PurchaseOptions {
     pub obfuscated_profile_id: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub app_account_token: Option<String>,
+    /// Purchase token of the existing subscription to replace (Android only).
+    /// When set, the purchase becomes a subscription upgrade/downgrade.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub old_purchase_token: Option<String>,
+    /// Replacement mode for subscription upgrades/downgrades (Android only).
+    /// Maps to Google Play BillingFlowParams.SubscriptionUpdateParams.ReplacementMode.
+    /// Defaults to WITH_TIME_PRORATION (1) if not specified.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub subscription_replacement_mode: Option<i32>,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -433,6 +442,23 @@ mod tests {
             .expect("Expected PurchaseOptions to be present");
         assert_eq!(opts.offer_token, Some("token".to_string()));
         assert_eq!(opts.obfuscated_account_id, Some("acc123".to_string()));
+        assert_eq!(opts.old_purchase_token, None);
+        assert_eq!(opts.subscription_replacement_mode, None);
+    }
+
+    #[test]
+    fn test_purchase_options_with_subscription_update() {
+        let json = r#"{"productId":"prod1","offerToken":"token","oldPurchaseToken":"old_token_123","subscriptionReplacementMode":2}"#;
+        let request: PurchaseRequest =
+            serde_json::from_str(json).expect("Failed to deserialize PurchaseRequest");
+
+        assert_eq!(request.product_id, "prod1");
+        let opts = request
+            .options
+            .expect("Expected PurchaseOptions to be present");
+        assert_eq!(opts.offer_token, Some("token".to_string()));
+        assert_eq!(opts.old_purchase_token, Some("old_token_123".to_string()));
+        assert_eq!(opts.subscription_replacement_mode, Some(2));
     }
 
     #[test]
