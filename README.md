@@ -21,6 +21,7 @@ A Tauri plugin for In-App Purchases (IAP) with support for subscriptions on iOS 
 - Fraud prevention with obfuscated account/profile IDs (Android)
 - App account token support for tracking (iOS)
 - Automatic offer token selection (Android)
+- Subscription upgrades/downgrades with proration modes (Android)
 
 ## Platform Support
 
@@ -148,6 +149,15 @@ const purchaseResult = await purchase('subscription_id_1', 'subs', {
   appAccountToken: '550e8400-e29b-41d4-a716-446655440000'
 });
 
+// Upgrade/downgrade subscription (Android)
+import { SubscriptionReplacementMode } from '@choochmeque/tauri-plugin-iap-api';
+
+const upgraded = await purchase('premium_subscription', 'subs', {
+  offerToken: 'premium_offer_token',
+  oldPurchaseToken: currentSubscription.purchaseToken,
+  subscriptionReplacementMode: SubscriptionReplacementMode.WITH_TIME_PRORATION
+});
+
 // Restore purchases (specify product type)
 const restored = await restorePurchases('subs');
 
@@ -251,6 +261,8 @@ Initiates a purchase flow with enhanced options for fraud prevention and account
   - `obfuscatedAccountId`: (Android) Hashed account ID for fraud prevention
   - `obfuscatedProfileId`: (Android) Hashed profile ID for fraud prevention
   - `appAccountToken`: (iOS) UUID string for account tracking and fraud prevention
+  - `oldPurchaseToken`: (Android) Purchase token of existing subscription to replace for upgrades/downgrades
+  - `subscriptionReplacementMode`: (Android) Proration mode using `SubscriptionReplacementMode` enum (defaults to `WITH_TIME_PRORATION`)
 
 **Returns:** Purchase object with transaction details
 
