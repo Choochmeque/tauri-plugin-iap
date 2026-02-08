@@ -10,7 +10,7 @@ importers:
     dependencies:
       '@tauri-apps/api':
         specifier: ^2.6.0
-        version: 2.9.1
+        version: 2.10.1
     devDependencies:
       '@rollup/plugin-typescript':
         specifier: ^12.1.4
@@ -23,7 +23,7 @@ importers:
         version: 4.0.18(vitest@4.0.18)
       happy-dom:
         specifier: ^20.0.10
-        version: 20.4.0
+        version: 20.5.1
       prettier:
         specifier: 3.8.1
         version: 3.8.1
@@ -38,7 +38,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^4.0.13
-        version: 4.0.18(@types/node@20.19.30)(@vitest/ui@4.0.18)(happy-dom@20.4.0)
+        version: 4.0.18(@types/node@20.19.30)(@vitest/ui@4.0.18)(happy-dom@20.5.1)
 
 packages:
 
@@ -382,8 +382,8 @@ packages:
   '@standard-schema/spec@1.1.0':
     resolution: {integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==}
 
-  '@tauri-apps/api@2.9.1':
-    resolution: {integrity: sha512-IGlhP6EivjXHepbBic618GOmiWe4URJiIeZFlB7x3czM0yDHHYviH1Xvoiv4FefdkQtn6v7TuwWCRfOGdnVUGw==}
+  '@tauri-apps/api@2.10.1':
+    resolution: {integrity: sha512-hKL/jWf293UDSUN09rR69hrToyIXBb8CjGaWC7gfinvnQrBVvnLr08FeFi38gxtugAVyVcTa5/FD/Xnkb1siBw==}
 
   '@types/chai@5.2.3':
     resolution: {integrity: sha512-Mw558oeA9fFbv65/y4mHtXDs9bPnFMZAL/jxdPFUpOHHIXX91mcgEHbS5Lahr+pwZFR8A7GQleRWeI6cGFC2UA==}
@@ -502,8 +502,8 @@ packages:
   function-bind@1.1.2:
     resolution: {integrity: sha512-7XHNxH7qX9xG5mIwxkhumTox/MIRNcOgDrxWsMt2pAr23WHp6MrRlN7FBSFpCpr+oVO0F744iUgR82nJMfG2SA==}
 
-  happy-dom@20.4.0:
-    resolution: {integrity: sha512-RDeQm3dT9n0A5f/TszjUmNCLEuPnMGv3Tv4BmNINebz/h17PA6LMBcxJ5FrcqltNBMh9jA/8ufgDdBYUdBt+eg==}
+  happy-dom@20.5.1:
+    resolution: {integrity: sha512-G/O6YsGjzNZVJtW3z5vzVtxgPVDuos8ZFlYz40Zz6F3p8a2jfPCMTFaRKTz9ltMHlZ2asEGKX97DwFEC+NkCFg==}
     engines: {node: '>=20.0.0'}
 
   has-flag@4.0.0:
@@ -945,7 +945,7 @@ snapshots:
 
   '@standard-schema/spec@1.1.0': {}
 
-  '@tauri-apps/api@2.9.1': {}
+  '@tauri-apps/api@2.10.1': {}
 
   '@types/chai@5.2.3':
     dependencies:
@@ -978,7 +978,7 @@ snapshots:
       obug: 2.1.1
       std-env: 3.10.0
       tinyrainbow: 3.0.3
-      vitest: 4.0.18(@types/node@20.19.30)(@vitest/ui@4.0.18)(happy-dom@20.4.0)
+      vitest: 4.0.18(@types/node@20.19.30)(@vitest/ui@4.0.18)(happy-dom@20.5.1)
 
   '@vitest/expect@4.0.18':
     dependencies:
@@ -1023,7 +1023,7 @@ snapshots:
       sirv: 3.0.2
       tinyglobby: 0.2.15
       tinyrainbow: 3.0.3
-      vitest: 4.0.18(@types/node@20.19.30)(@vitest/ui@4.0.18)(happy-dom@20.4.0)
+      vitest: 4.0.18(@types/node@20.19.30)(@vitest/ui@4.0.18)(happy-dom@20.5.1)
 
   '@vitest/utils@4.0.18':
     dependencies:
@@ -1094,7 +1094,7 @@ snapshots:
 
   function-bind@1.1.2: {}
 
-  happy-dom@20.4.0:
+  happy-dom@20.5.1:
     dependencies:
       '@types/node': 20.19.30
       '@types/whatwg-mimetype': 3.0.2
@@ -1259,7 +1259,7 @@ snapshots:
       '@types/node': 20.19.30
       fsevents: 2.3.3
 
-  vitest@4.0.18(@types/node@20.19.30)(@vitest/ui@4.0.18)(happy-dom@20.4.0):
+  vitest@4.0.18(@types/node@20.19.30)(@vitest/ui@4.0.18)(happy-dom@20.5.1):
     dependencies:
       '@vitest/expect': 4.0.18
       '@vitest/mocker': 4.0.18(vite@7.3.1(@types/node@20.19.30))
@@ -1284,7 +1284,7 @@ snapshots:
     optionalDependencies:
       '@types/node': 20.19.30
       '@vitest/ui': 4.0.18(vitest@4.0.18)
-      happy-dom: 20.4.0
+      happy-dom: 20.5.1
     transitivePeerDependencies:
       - jiti
       - less
