@@ -1,8 +1,8 @@
 use serde::de::DeserializeOwned;
 use tauri::Emitter;
 use tauri::Manager;
-use tauri::{plugin::PluginApi, AppHandle, Runtime};
-use windows::core::{Interface, HSTRING};
+use tauri::{AppHandle, Runtime, plugin::PluginApi};
+use windows::core::{HSTRING, Interface};
 use windows::{
     Foundation::DateTime,
     Services::Store::{

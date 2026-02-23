@@ -2,5 +2,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-  iap_demo_lib::run();
+    iap_demo_lib::run();
 }
