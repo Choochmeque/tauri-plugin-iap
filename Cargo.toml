@@ -23,7 +23,7 @@ log = "0.4"
 swift-bridge = { version = "0.1", features = ["async"] }
 
 [target.'cfg(target_os = "windows")'.dependencies]
-windows = { version = "0.61", features = [
+windows = { version = "0.62", features = [
     "Foundation",
     "Foundation_Collections",
     "Services_Store",
