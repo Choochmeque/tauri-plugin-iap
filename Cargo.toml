@@ -1,6 +1,6 @@
 [package]
 name = "tauri-plugin-iap"
-version = "0.8.0"
+version = "0.8.1"
 authors = ["You"]
 description = "A Tauri v2 plugin that enables In-App Purchases (IAP)"
 edition = "2024"
