@@ -82,11 +82,11 @@ fn compile_swift() {
 
     if !exit_status.status.success() {
         panic!(
-            r#"
+            r"
 Swift build failed for target: {}
 Stderr: {}
 Stdout: {}
-"#,
+",
             target_triple,
             String::from_utf8(exit_status.stderr).expect("Stderr must be valid UTF-8"),
             String::from_utf8(exit_status.stdout).expect("Stdout must be valid UTF-8"),
