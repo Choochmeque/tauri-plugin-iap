@@ -23,7 +23,7 @@ importers:
         version: 4.0.18(vitest@4.0.18)
       happy-dom:
         specifier: ^20.0.10
-        version: 20.7.0
+        version: 20.8.3
       prettier:
         specifier: 3.8.1
         version: 3.8.1
@@ -38,7 +38,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^4.0.13
-        version: 4.0.18(@types/node@25.3.0)(@vitest/ui@4.0.18)(happy-dom@20.7.0)
+        version: 4.0.18(@types/node@25.3.5)(@vitest/ui@4.0.18)(happy-dom@20.8.3)
 
 packages:
 
@@ -394,8 +394,8 @@ packages:
   '@types/estree@1.0.8':
     resolution: {integrity: sha512-dWHzHa2WqEXI/O1E9OjrocMTKJl2mSrEolh1Iomrv6U+JuNwaHXsXx9bLu5gG7BUWFIN0skIQJQ/L1rIex4X6w==}
 
-  '@types/node@25.3.0':
-    resolution: {integrity: sha512-4K3bqJpXpqfg2XKGK9bpDTc6xO/xoUP/RBWS7AtRMug6zZFaRekiLzjVtAoZMquxoAbzBvy5nxQ7veS5eYzf8A==}
+  '@types/node@25.3.5':
+    resolution: {integrity: sha512-oX8xrhvpiyRCQkG1MFchB09f+cXftgIXb3a7UUa4Y3wpmZPw5tyZGTLWhlESOLq1Rq6oDlc8npVU2/9xiCuXMA==}
 
   '@types/whatwg-mimetype@3.0.2':
     resolution: {integrity: sha512-c2AKvDT8ToxLIOUlN51gTiHXflsfIFisS4pO7pDPoKouJCESkhZnEy623gwP9laCy5lnLDAw1vAzu2vM2YLOrA==}
@@ -502,8 +502,8 @@ packages:
   function-bind@1.1.2:
     resolution: {integrity: sha512-7XHNxH7qX9xG5mIwxkhumTox/MIRNcOgDrxWsMt2pAr23WHp6MrRlN7FBSFpCpr+oVO0F744iUgR82nJMfG2SA==}
 
-  happy-dom@20.7.0:
-    resolution: {integrity: sha512-hR/uLYQdngTyEfxnOoa+e6KTcfBFyc1hgFj/Cc144A5JJUuHFYqIEBDcD4FeGqUeKLRZqJ9eN9u7/GDjYEgS1g==}
+  happy-dom@20.8.3:
+    resolution: {integrity: sha512-lMHQRRwIPyJ70HV0kkFT7jH/gXzSI7yDkQFe07E2flwmNDFoWUTRMKpW2sglsnpeA7b6S2TJPp98EbQxai8eaQ==}
     engines: {node: '>=20.0.0'}
 
   has-flag@4.0.0:
@@ -956,7 +956,7 @@ snapshots:
 
   '@types/estree@1.0.8': {}
 
-  '@types/node@25.3.0':
+  '@types/node@25.3.5':
     dependencies:
       undici-types: 7.18.2
 
@@ -964,7 +964,7 @@ snapshots:
 
   '@types/ws@8.18.1':
     dependencies:
-      '@types/node': 25.3.0
+      '@types/node': 25.3.5
 
   '@vitest/coverage-v8@4.0.18(vitest@4.0.18)':
     dependencies:
@@ -978,7 +978,7 @@ snapshots:
       obug: 2.1.1
       std-env: 3.10.0
       tinyrainbow: 3.0.3
-      vitest: 4.0.18(@types/node@25.3.0)(@vitest/ui@4.0.18)(happy-dom@20.7.0)
+      vitest: 4.0.18(@types/node@25.3.5)(@vitest/ui@4.0.18)(happy-dom@20.8.3)
 
   '@vitest/expect@4.0.18':
     dependencies:
@@ -989,13 +989,13 @@ snapshots:
       chai: 6.2.2
       tinyrainbow: 3.0.3
 
-  '@vitest/mocker@4.0.18(vite@7.3.1(@types/node@25.3.0))':
+  '@vitest/mocker@4.0.18(vite@7.3.1(@types/node@25.3.5))':
     dependencies:
       '@vitest/spy': 4.0.18
       estree-walker: 3.0.3
       magic-string: 0.30.21
     optionalDependencies:
-      vite: 7.3.1(@types/node@25.3.0)
+      vite: 7.3.1(@types/node@25.3.5)
 
   '@vitest/pretty-format@4.0.18':
     dependencies:
@@ -1023,7 +1023,7 @@ snapshots:
       sirv: 3.0.2
       tinyglobby: 0.2.15
       tinyrainbow: 3.0.3
-      vitest: 4.0.18(@types/node@25.3.0)(@vitest/ui@4.0.18)(happy-dom@20.7.0)
+      vitest: 4.0.18(@types/node@25.3.5)(@vitest/ui@4.0.18)(happy-dom@20.8.3)
 
   '@vitest/utils@4.0.18':
     dependencies:
@@ -1094,9 +1094,9 @@ snapshots:
 
   function-bind@1.1.2: {}
 
-  happy-dom@20.7.0:
+  happy-dom@20.8.3:
     dependencies:
-      '@types/node': 25.3.0
+      '@types/node': 25.3.5
       '@types/whatwg-mimetype': 3.0.2
       '@types/ws': 8.18.1
       entities: 7.0.1
@@ -1247,7 +1247,7 @@ snapshots:
 
   undici-types@7.18.2: {}
 
-  vite@7.3.1(@types/node@25.3.0):
+  vite@7.3.1(@types/node@25.3.5):
     dependencies:
       esbuild: 0.27.2
       fdir: 6.5.0(picomatch@4.0.3)
@@ -1256,13 +1256,13 @@ snapshots:
       rollup: 4.59.0
       tinyglobby: 0.2.15
     optionalDependencies:
-      '@types/node': 25.3.0
+      '@types/node': 25.3.5
       fsevents: 2.3.3
 
-  vitest@4.0.18(@types/node@25.3.0)(@vitest/ui@4.0.18)(happy-dom@20.7.0):
+  vitest@4.0.18(@types/node@25.3.5)(@vitest/ui@4.0.18)(happy-dom@20.8.3):
     dependencies:
       '@vitest/expect': 4.0.18
-      '@vitest/mocker': 4.0.18(vite@7.3.1(@types/node@25.3.0))
+      '@vitest/mocker': 4.0.18(vite@7.3.1(@types/node@25.3.5))
       '@vitest/pretty-format': 4.0.18
       '@vitest/runner': 4.0.18
       '@vitest/snapshot': 4.0.18
@@ -1279,12 +1279,12 @@ snapshots:
       tinyexec: 1.0.2
       tinyglobby: 0.2.15
       tinyrainbow: 3.0.3
-      vite: 7.3.1(@types/node@25.3.0)
+      vite: 7.3.1(@types/node@25.3.5)
       why-is-node-running: 2.3.0
     optionalDependencies:
-      '@types/node': 25.3.0
+      '@types/node': 25.3.5
       '@vitest/ui': 4.0.18(vitest@4.0.18)
-      happy-dom: 20.7.0
+      happy-dom: 20.8.3
     transitivePeerDependencies:
       - jiti
       - less
