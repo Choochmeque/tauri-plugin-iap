@@ -351,24 +351,27 @@ Listens for purchase state changes.
 3. App must be code-signed to use StoreKit
 4. Clear purchase history in System Settings > App Store > Sandbox Account
 
-## FAQ
+## Troubleshooting
 
-### Q: `dyld[30281]: Library not loaded: @rpath/libswift_Concurrency.dylib`
+<details>
+<summary><code>dyld: Library not loaded: @rpath/libswift_Concurrency.dylib</code></summary>
 
-Make sure that `MACOSX_DEPLOYMENT_TARGET` is set to 13.0+. By default Tauri sets 11.0 in debug mode.
+This error occurs when `MACOSX_DEPLOYMENT_TARGET` is below 13.0. Tauri defaults to 11.0 in debug mode.
 
-You can add `.cargo/config.toml` to your project:
+**Option 1:** Add `.cargo/config.toml` to your project:
 
 ```toml
 [env]
 MACOSX_DEPLOYMENT_TARGET = "13.0"
 ```
 
-Or run your app with the environment variable:
+**Option 2:** Set the environment variable when running:
 
 ```bash
 MACOSX_DEPLOYMENT_TARGET="13.0" pnpm tauri dev
 ```
+
+</details>
 
 ## License
 
