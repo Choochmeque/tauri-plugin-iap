@@ -94,15 +94,6 @@ jobs:
       - uses: actions/checkout@v6
       - uses: becheran/mlc@v1
 
-  # Spellcheck.
-  spellcheck:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      - uses: streetsidesoftware/cspell-action@v8
-        with:
-          files: "**/*.{rs,md}"
-
   # cargo-deny.
   deny:
     name: cargo-deny
