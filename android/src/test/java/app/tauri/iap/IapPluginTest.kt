@@ -82,6 +82,20 @@ class IapPluginTest {
     }
 
     @Test
+    fun testConsumePurchaseArgs_defaultValues() {
+        val args = ConsumePurchaseArgs()
+        assertNull(args.purchaseToken)
+    }
+
+    @Test
+    fun testConsumePurchaseArgs_withToken() {
+        val args = ConsumePurchaseArgs().apply {
+            purchaseToken = "test_token_456"
+        }
+        assertEquals("test_token_456", args.purchaseToken)
+    }
+
+    @Test
     fun testGetProductStatusArgs_defaultValues() {
         val args = GetProductStatusArgs()
         assertEquals("", args.productId)

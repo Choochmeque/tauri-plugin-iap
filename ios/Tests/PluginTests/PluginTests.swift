@@ -218,6 +218,27 @@ final class AcknowledgePurchaseArgsTests: XCTestCase {
     }
 }
 
+final class ConsumePurchaseArgsTests: XCTestCase {
+    func testDecoding() throws {
+        let json = """
+        {
+            "purchaseToken": "token_def789uvw"
+        }
+        """
+        let data = json.data(using: .utf8)!
+        let args = try JSONDecoder().decode(ConsumePurchaseArgs.self, from: data)
+
+        XCTAssertEqual(args.purchaseToken, "token_def789uvw")
+    }
+
+    func testDecodingFailsWithMissingToken() {
+        let json = "{}"
+        let data = json.data(using: .utf8)!
+
+        XCTAssertThrowsError(try JSONDecoder().decode(ConsumePurchaseArgs.self, from: data))
+    }
+}
+
 final class GetProductStatusArgsTests: XCTestCase {
     func testDecodingMinimal() throws {
         let json = """
@@ -448,8 +469,20 @@ final class IapPluginFunctionTests: XCTestCase {
         try plugin.acknowledgePurchase(invoke)
 
         XCTAssertTrue(result.didResolve)
-        let json = result.getResolvedJson()
-        XCTAssertEqual(json?["success"] as? Bool, true)
+        XCTAssertFalse(result.didReject)
+    }
+
+    // MARK: - consumePurchase() Tests
+
+    func testConsumePurchaseAlwaysSucceeds() throws {
+        let (invoke, result) = createTestInvoke(command: "consumePurchase", args: [
+            "purchaseToken": "any_token_67890"
+        ])
+
+        try plugin.consumePurchase(invoke)
+
+        XCTAssertTrue(result.didResolve)
+        XCTAssertFalse(result.didReject)
     }
 
     // MARK: - restorePurchases() Tests

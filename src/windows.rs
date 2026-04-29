@@ -1,4 +1,7 @@
+use base64::Engine;
+use base64::engine::general_purpose::URL_SAFE_NO_PAD;
 use serde::de::DeserializeOwned;
+use serde::{Deserialize, Serialize};
 use tauri::Emitter;
 use tauri::Manager;
 use tauri::{AppHandle, Runtime, plugin::PluginApi};
@@ -6,7 +9,8 @@ use windows::core::{HSTRING, Interface};
 use windows::{
     Foundation::DateTime,
     Services::Store::{
-        StoreContext, StoreLicense, StoreProduct, StorePurchaseProperties, StorePurchaseStatus,
+        StoreConsumableStatus, StoreContext, StoreLicense, StoreProduct, StorePurchaseProperties,
+        StorePurchaseStatus,
     },
     Win32::UI::Shell::IInitializeWithWindow,
 };
@@ -15,6 +19,43 @@ use windows_collections::IIterable;
 use crate::error::{ErrorResponse, PluginInvokeError};
 use crate::models::*;
 use std::sync::{Arc, RwLock};
+
+/// Microsoft Store has no native per-transaction token, but our cross-platform API
+/// exposes `purchase_token: String` for every purchase. We synthesize one by encoding
+/// the data needed to consume the purchase later (`product_id` for
+/// `ReportConsumableFulfillmentAsync`) into a versioned base64-JSON envelope.
+/// The token is opaque to the developer; only `consume_purchase()` decodes it.
+#[derive(Serialize, Deserialize)]
+struct WindowsPurchaseTokenV1 {
+    v: u8,
+    product_id: String,
+    purchase_time: i64,
+    nonce: u32,
+}
+
+impl WindowsPurchaseTokenV1 {
+    fn encode(&self) -> String {
+        // serde_json on a struct of u8/String/i64/u32 cannot fail.
+        let bytes = serde_json::to_vec(self).expect("envelope is always serializable");
+        URL_SAFE_NO_PAD.encode(&bytes)
+    }
+
+    fn decode(s: &str) -> crate::Result<Self> {
+        let invalid = || {
+            crate::Error::PluginInvoke(PluginInvokeError::InvokeRejected(ErrorResponse {
+                code: Some("invalidPurchaseToken".to_string()),
+                message: Some("Invalid Windows purchase token".to_string()),
+                data: (),
+            }))
+        };
+        let bytes = URL_SAFE_NO_PAD.decode(s).map_err(|_| invalid())?;
+        let env: Self = serde_json::from_slice(&bytes).map_err(|_| invalid())?;
+        if env.v != 1 {
+            return Err(invalid());
+        }
+        Ok(env)
+    }
+}
 
 pub fn init<R: Runtime, C: DeserializeOwned>(
     app: &AppHandle<R>,
@@ -385,7 +426,18 @@ impl<R: Runtime> Iap<R> {
             })?
             .as_millis() as i64;
 
-        let purchase_token = format!("win_{}_{}", product.product_id, purchase_time);
+        // Sub-millisecond entropy so two purchases in the same `purchase_time` ms still differ.
+        let nonce = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.subsec_nanos())
+            .unwrap_or(0);
+        let purchase_token = WindowsPurchaseTokenV1 {
+            v: 1,
+            product_id: product.product_id.clone(),
+            purchase_time,
+            nonce,
+        }
+        .encode();
 
         let purchase = Purchase {
             order_id: Some(purchase_token.clone()),
@@ -499,13 +551,53 @@ impl<R: Runtime> Iap<R> {
         })
     }
 
-    pub async fn acknowledge_purchase(
-        &self,
-        _purchase_token: String,
-    ) -> crate::Result<AcknowledgePurchaseResponse> {
-        // Windows Store handles acknowledgment automatically
-        // This method exists for API compatibility
-        Ok(AcknowledgePurchaseResponse { success: true })
+    /// No-op: Microsoft Store auto-acknowledges purchases. Method exists for API parity.
+    pub async fn acknowledge_purchase(&self, _purchase_token: String) -> crate::Result<()> {
+        Ok(())
+    }
+
+    pub async fn consume_purchase(&self, purchase_token: String) -> crate::Result<()> {
+        let envelope = WindowsPurchaseTokenV1::decode(&purchase_token)?;
+        let context = self.get_store_context()?;
+        let store_id = HSTRING::from(&envelope.product_id);
+        let tracking_id = windows::core::GUID::new()?;
+
+        let result = context
+            .ReportConsumableFulfillmentAsync(&store_id, 1u32, tracking_id)
+            .and_then(|async_op| async_op.get())?;
+
+        let status = result.Status()?;
+        match status {
+            StoreConsumableStatus::Succeeded => Ok(()),
+            StoreConsumableStatus::InsufficentQuantity => Err(crate::Error::PluginInvoke(
+                PluginInvokeError::InvokeRejected(ErrorResponse {
+                    code: Some("insufficientQuantity".to_string()),
+                    message: Some("Not enough balance remaining to consume".to_string()),
+                    data: (),
+                }),
+            )),
+            StoreConsumableStatus::NetworkError => Err(crate::Error::PluginInvoke(
+                PluginInvokeError::InvokeRejected(ErrorResponse {
+                    code: Some("networkError".to_string()),
+                    message: Some("Network error during consume".to_string()),
+                    data: (),
+                }),
+            )),
+            StoreConsumableStatus::ServerError => Err(crate::Error::PluginInvoke(
+                PluginInvokeError::InvokeRejected(ErrorResponse {
+                    code: Some("serverError".to_string()),
+                    message: Some("Server error during consume".to_string()),
+                    data: (),
+                }),
+            )),
+            _ => Err(crate::Error::PluginInvoke(
+                PluginInvokeError::InvokeRejected(ErrorResponse {
+                    code: Some("consumeFailed".to_string()),
+                    message: Some("Failed to consume purchase".to_string()),
+                    data: (),
+                }),
+            )),
+        }
     }
 
     pub async fn get_product_status(
@@ -659,5 +751,102 @@ mod tests {
         let result = Iap::<tauri::Wry>::datetime_to_unix_millis(&datetime);
         // Should be approximately 4102444800000 ms
         assert!(result > 4000000000000);
+    }
+
+    fn sample_envelope(product_id: &str) -> WindowsPurchaseTokenV1 {
+        WindowsPurchaseTokenV1 {
+            v: 1,
+            product_id: product_id.to_string(),
+            purchase_time: 1714387200000,
+            nonce: 42,
+        }
+    }
+
+    fn assert_envelope_eq(a: &WindowsPurchaseTokenV1, b: &WindowsPurchaseTokenV1) {
+        assert_eq!(a.v, b.v);
+        assert_eq!(a.product_id, b.product_id);
+        assert_eq!(a.purchase_time, b.purchase_time);
+        assert_eq!(a.nonce, b.nonce);
+    }
+
+    #[test]
+    fn test_envelope_round_trip_typical() {
+        let original = sample_envelope("9MSPC6MP8FM4");
+        let encoded = original.encode();
+        let decoded =
+            WindowsPurchaseTokenV1::decode(&encoded).expect("just-encoded token must decode");
+        assert_envelope_eq(&original, &decoded);
+    }
+
+    #[test]
+    fn test_envelope_round_trip_empty_product_id() {
+        let original = sample_envelope("");
+        let encoded = original.encode();
+        let decoded =
+            WindowsPurchaseTokenV1::decode(&encoded).expect("just-encoded token must decode");
+        assert_envelope_eq(&original, &decoded);
+    }
+
+    #[test]
+    fn test_envelope_round_trip_long_product_id() {
+        let original = sample_envelope(&"x".repeat(512));
+        let encoded = original.encode();
+        let decoded =
+            WindowsPurchaseTokenV1::decode(&encoded).expect("just-encoded token must decode");
+        assert_envelope_eq(&original, &decoded);
+    }
+
+    #[test]
+    fn test_envelope_encoded_uses_url_safe_alphabet() {
+        let encoded = sample_envelope("9MSPC6MP8FM4").encode();
+        for ch in encoded.chars() {
+            assert!(
+                ch.is_ascii_alphanumeric() || ch == '-' || ch == '_',
+                "encoded token contains non-URL-safe char: {ch:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn test_envelope_encoding_is_stable() {
+        let env = sample_envelope("9MSPC6MP8FM4");
+        assert_eq!(env.encode(), env.encode());
+    }
+
+    #[test]
+    fn test_envelope_decode_rejects_malformed_base64() {
+        assert!(WindowsPurchaseTokenV1::decode("!!!not-base64!!!").is_err());
+    }
+
+    #[test]
+    fn test_envelope_decode_rejects_non_json_payload() {
+        // Valid base64 of "hello world" (not JSON).
+        let bogus = URL_SAFE_NO_PAD.encode(b"hello world");
+        assert!(WindowsPurchaseTokenV1::decode(&bogus).is_err());
+    }
+
+    #[test]
+    fn test_envelope_decode_rejects_unknown_version() {
+        let bytes = serde_json::to_vec(&serde_json::json!({
+            "v": 99,
+            "product_id": "9MSPC6MP8FM4",
+            "purchase_time": 1714387200000_i64,
+            "nonce": 42,
+        }))
+        .expect("static JSON must serialize");
+        let encoded = URL_SAFE_NO_PAD.encode(&bytes);
+        assert!(WindowsPurchaseTokenV1::decode(&encoded).is_err());
+    }
+
+    #[test]
+    fn test_envelope_decode_rejects_missing_product_id() {
+        let bytes = serde_json::to_vec(&serde_json::json!({
+            "v": 1,
+            "purchase_time": 1714387200000_i64,
+            "nonce": 42,
+        }))
+        .expect("static JSON must serialize");
+        let encoded = URL_SAFE_NO_PAD.encode(&bytes);
+        assert!(WindowsPurchaseTokenV1::decode(&encoded).is_err());
     }
 }

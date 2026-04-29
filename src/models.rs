@@ -77,8 +77,8 @@ pub struct PurchaseOptions {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub old_purchase_token: Option<String>,
     /// Replacement mode for subscription upgrades/downgrades (Android only).
-    /// Maps to Google Play BillingFlowParams.SubscriptionUpdateParams.ReplacementMode.
-    /// Defaults to WITH_TIME_PRORATION (1) if not specified.
+    /// Maps to Google Play `BillingFlowParams.SubscriptionUpdateParams.ReplacementMode`.
+    /// Defaults to `WITH_TIME_PRORATION` (1) if not specified.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub subscription_replacement_mode: Option<i32>,
 }
@@ -147,14 +147,14 @@ pub struct AcknowledgePurchaseRequest {
     pub purchase_token: String,
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct AcknowledgePurchaseResponse {
-    pub success: bool,
+pub struct ConsumePurchaseRequest {
+    pub purchase_token: String,
 }
 
-/// Keep in sync with PurchaseState in guest-js/index.ts
-#[derive(Debug, Clone, Copy, PartialEq)]
+/// Keep in sync with `PurchaseState` in `guest-js/index.ts`
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PurchaseStateValue {
     Purchased = 0,
     Canceled = 1,
@@ -177,9 +177,9 @@ impl<'de> Deserialize<'de> for PurchaseStateValue {
     {
         let value = i32::deserialize(deserializer)?;
         match value {
-            0 => Ok(PurchaseStateValue::Purchased),
-            1 => Ok(PurchaseStateValue::Canceled),
-            2 => Ok(PurchaseStateValue::Pending),
+            0 => Ok(Self::Purchased),
+            1 => Ok(Self::Canceled),
+            2 => Ok(Self::Pending),
             _ => Err(serde::de::Error::custom(format!(
                 "Invalid purchase state: {value}"
             ))),
@@ -349,7 +349,7 @@ mod tests {
             product_type: "inapp".to_string(),
             formatted_price: Some("$9.99".to_string()),
             price_currency_code: Some("USD".to_string()),
-            price_amount_micros: Some(9990000),
+            price_amount_micros: Some(9_990_000),
             subscription_offer_details: None,
         };
         let json = serde_json::to_string(&product).expect("Failed to serialize Product");
@@ -364,7 +364,7 @@ mod tests {
             order_id: Some("order123".to_string()),
             package_name: "com.example.app".to_string(),
             product_id: "product1".to_string(),
-            purchase_time: 1700000000000,
+            purchase_time: 1_700_000_000_000,
             purchase_token: "token123".to_string(),
             purchase_state: PurchaseStateValue::Purchased,
             is_auto_renewing: true,
@@ -391,7 +391,7 @@ mod tests {
         let phase = PricingPhase {
             formatted_price: "$4.99".to_string(),
             price_currency_code: "USD".to_string(),
-            price_amount_micros: 4990000,
+            price_amount_micros: 4_990_000,
             billing_period: "P1M".to_string(),
             billing_cycle_count: 1,
             recurrence_mode: 1,
@@ -403,7 +403,7 @@ mod tests {
 
         let deserialized: PricingPhase =
             serde_json::from_str(&json).expect("Failed to deserialize PricingPhase");
-        assert_eq!(deserialized.price_amount_micros, 4990000);
+        assert_eq!(deserialized.price_amount_micros, 4_990_000);
     }
 
     #[test]
@@ -415,7 +415,7 @@ mod tests {
             pricing_phases: vec![PricingPhase {
                 formatted_price: "$9.99".to_string(),
                 price_currency_code: "USD".to_string(),
-                price_amount_micros: 9990000,
+                price_amount_micros: 9_990_000,
                 billing_period: "P1M".to_string(),
                 billing_cycle_count: 0,
                 recurrence_mode: 1,
@@ -463,7 +463,7 @@ mod tests {
 
     #[test]
     fn test_restore_purchases_request_default() {
-        let json = r#"{}"#;
+        let json = "{}";
         let request: RestorePurchasesRequest =
             serde_json::from_str(json).expect("Failed to deserialize RestorePurchasesRequest");
         assert_eq!(request.product_type, "subs");
@@ -495,8 +495,8 @@ mod tests {
             product_id: "prod1".to_string(),
             is_owned: true,
             purchase_state: Some(PurchaseStateValue::Purchased),
-            purchase_time: Some(1700000000000),
-            expiration_time: Some(1703000000000),
+            purchase_time: Some(1_700_000_000_000),
+            expiration_time: Some(1_703_000_000_000),
             is_auto_renewing: Some(true),
             is_acknowledged: Some(true),
             purchase_token: Some("token123".to_string()),
@@ -531,7 +531,7 @@ mod tests {
     fn test_purchase_history_record_serde() {
         let record = PurchaseHistoryRecord {
             product_id: "prod1".to_string(),
-            purchase_time: 1700000000000,
+            purchase_time: 1_700_000_000_000,
             purchase_token: "token".to_string(),
             quantity: 1,
             original_json: "{}".to_string(),

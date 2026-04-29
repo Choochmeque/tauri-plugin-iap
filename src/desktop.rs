@@ -45,10 +45,13 @@ impl<R: Runtime> Iap<R> {
         )))
     }
 
-    pub async fn acknowledge_purchase(
-        &self,
-        _purchase_token: String,
-    ) -> crate::Result<AcknowledgePurchaseResponse> {
+    pub async fn acknowledge_purchase(&self, _purchase_token: String) -> crate::Result<()> {
+        Err(crate::Error::from(std::io::Error::other(
+            "IAP is not supported on this platform",
+        )))
+    }
+
+    pub async fn consume_purchase(&self, _purchase_token: String) -> crate::Result<()> {
         Err(crate::Error::from(std::io::Error::other(
             "IAP is not supported on this platform",
         )))

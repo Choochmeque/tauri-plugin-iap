@@ -12,6 +12,7 @@ Default permissions for the plugin
 - `allow-restore-purchases`
 - `allow-get-purchase-history`
 - `allow-acknowledge-purchase`
+- `allow-consume-purchase`
 - `allow-get-product-status`
 
 ## Permission Table
@@ -45,6 +46,32 @@ Enables the acknowledge_purchase command without any pre-configured scope.
 <td>
 
 Denies the acknowledge_purchase command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`iap:allow-consume-purchase`
+
+</td>
+<td>
+
+Enables the consume_purchase command without any pre-configured scope.
+
+</td>
+</tr>
+
+<tr>
+<td>
+
+`iap:deny-consume-purchase`
+
+</td>
+<td>
+
+Denies the consume_purchase command without any pre-configured scope.
 
 </td>
 </tr>

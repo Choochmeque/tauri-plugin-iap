@@ -25,7 +25,7 @@ pub fn init() {
 ///
 /// Called by platform-specific code when transaction updates occur.
 #[allow(dead_code)]
-pub fn trigger(event: &str, payload: String) -> crate::Result<()> {
+pub fn trigger(event: &str, payload: &str) -> crate::Result<()> {
     let listeners = LISTENERS.get().ok_or_else(|| {
         crate::Error::from(PluginInvokeError::InvokeRejected(ErrorResponse {
             code: None,
@@ -34,16 +34,21 @@ pub fn trigger(event: &str, payload: String) -> crate::Result<()> {
         }))
     })?;
 
-    let guard = listeners.read().map_err(|e| {
-        crate::Error::from(PluginInvokeError::InvokeRejected(ErrorResponse {
-            code: None,
-            message: Some(format!("Failed to acquire read lock: {e}")),
-            data: (),
-        }))
-    })?;
+    // Clone the channel set out of the guard, then drop the lock before
+    // parsing/sending to avoid holding a read lock across slow operations.
+    let channels = {
+        let guard = listeners.read().map_err(|e| {
+            crate::Error::from(PluginInvokeError::InvokeRejected(ErrorResponse {
+                code: None,
+                message: Some(format!("Failed to acquire read lock: {e}")),
+                data: (),
+            }))
+        })?;
+        guard.get(event).cloned()
+    };
 
-    if let Some(channels) = guard.get(event) {
-        let value: serde_json::Value = serde_json::from_str(&payload).map_err(|e| {
+    if let Some(channels) = channels {
+        let value: serde_json::Value = serde_json::from_str(payload).map_err(|e| {
             crate::Error::from(PluginInvokeError::InvokeRejected(ErrorResponse {
                 code: None,
                 message: Some(format!("Failed to parse payload JSON: {e}")),
@@ -59,28 +64,30 @@ pub fn trigger(event: &str, payload: String) -> crate::Result<()> {
 
 /// Register a channel to receive events for the given event name.
 #[tauri::command]
-pub(crate) fn register_listener(
+pub fn register_listener(
     event: String,
     handler: tauri::ipc::Channel<serde_json::Value>,
 ) -> crate::Result<()> {
     let listeners = LISTENERS.get_or_init(|| RwLock::new(HashMap::new()));
-    let mut guard = listeners.write().map_err(|e| {
-        crate::Error::from(PluginInvokeError::InvokeRejected(ErrorResponse {
-            code: None,
-            message: Some(format!("Failed to acquire write lock: {e}")),
-            data: (),
-        }))
-    })?;
-    guard
-        .entry(event)
-        .or_default()
-        .insert(handler.id(), handler);
+    {
+        let mut guard = listeners.write().map_err(|e| {
+            crate::Error::from(PluginInvokeError::InvokeRejected(ErrorResponse {
+                code: None,
+                message: Some(format!("Failed to acquire write lock: {e}")),
+                data: (),
+            }))
+        })?;
+        guard
+            .entry(event)
+            .or_default()
+            .insert(handler.id(), handler);
+    }
     Ok(())
 }
 
 /// Remove a previously registered listener by event name and channel ID.
 #[tauri::command]
-pub(crate) fn remove_listener(event: String, channel_id: u32) -> crate::Result<()> {
+pub fn remove_listener(event: &str, channel_id: u32) -> crate::Result<()> {
     let listeners = LISTENERS.get().ok_or_else(|| {
         crate::Error::from(PluginInvokeError::InvokeRejected(ErrorResponse {
             code: None,
@@ -88,15 +95,17 @@ pub(crate) fn remove_listener(event: String, channel_id: u32) -> crate::Result<(
             data: (),
         }))
     })?;
-    let mut guard = listeners.write().map_err(|e| {
-        crate::Error::from(PluginInvokeError::InvokeRejected(ErrorResponse {
-            code: None,
-            message: Some(format!("Failed to acquire write lock: {e}")),
-            data: (),
-        }))
-    })?;
-    if let Some(channels) = guard.get_mut(&event) {
-        channels.remove(&channel_id);
+    {
+        let mut guard = listeners.write().map_err(|e| {
+            crate::Error::from(PluginInvokeError::InvokeRejected(ErrorResponse {
+                code: None,
+                message: Some(format!("Failed to acquire write lock: {e}")),
+                data: (),
+            }))
+        })?;
+        if let Some(channels) = guard.get_mut(event) {
+            channels.remove(&channel_id);
+        }
     }
     Ok(())
 }

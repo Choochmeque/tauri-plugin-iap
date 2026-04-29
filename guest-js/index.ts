@@ -119,13 +119,6 @@ export interface GetPurchaseHistoryResponse {
 }
 
 /**
- * Response from acknowledging a purchase
- */
-export interface AcknowledgePurchaseResponse {
-  success: boolean;
-}
-
-/**
  * Purchase state enumeration
  */
 export enum PurchaseState {
@@ -322,31 +315,61 @@ export async function getPurchaseHistory(): Promise<GetPurchaseHistoryResponse> 
 }
 
 /**
- * Acknowledge a purchase (Android only).
- * Purchases must be acknowledged within 3 days or they will be refunded.
- * iOS automatically acknowledges purchases.
+ * Acknowledge a non-consumable purchase (subscriptions, durable products).
+ *
+ * On Android this calls `BillingClient.acknowledgePurchase()` and is required
+ * within 3 days of purchase or Google will auto-refund. On iOS, macOS, and
+ * Windows this is a no-op — those stores handle acknowledgment automatically.
+ *
+ * For consumable products (credits, coins, gems) call {@link consumePurchase}
+ * instead. Never call both for the same purchase token.
  *
  * @param purchaseToken - Purchase token from the transaction
- * @returns Promise resolving to acknowledgment status
+ * @throws Rejects if acknowledgment fails (e.g., Android billing client error)
  * @example
  * ```typescript
- * const result = await acknowledgePurchase(purchase.purchaseToken);
- * if (result.success) {
- *   console.log('Purchase acknowledged');
- * }
+ * await acknowledgePurchase(purchase.purchaseToken);
  * ```
  */
 export async function acknowledgePurchase(
   purchaseToken: string,
-): Promise<AcknowledgePurchaseResponse> {
-  return await invoke<AcknowledgePurchaseResponse>(
-    "plugin:iap|acknowledge_purchase",
-    {
-      payload: {
-        purchaseToken,
-      },
+): Promise<void> {
+  await invoke("plugin:iap|acknowledge_purchase", {
+    payload: {
+      purchaseToken,
     },
-  );
+  });
+}
+
+/**
+ * Consume a purchased consumable product so it can be purchased again.
+ *
+ * On Android this calls `BillingClient.consumeAsync()`, which acknowledges the
+ * purchase and removes ownership from the user's account. On Windows this calls
+ * `StoreContext.ReportConsumableFulfillmentAsync` with quantity 1. On iOS and
+ * macOS this is a no-op — StoreKit auto-allows re-purchase once `purchase()`
+ * has finished the transaction.
+ *
+ * Use this for consumables (credits, coins, gems). For non-consumables and
+ * subscriptions call {@link acknowledgePurchase} instead. Never call both for
+ * the same purchase token.
+ *
+ * @param purchaseToken - Purchase token from the transaction
+ * @throws Rejects if consumption fails (e.g., Android billing client error,
+ *   Windows network/server error, or invalid token on Windows)
+ * @example
+ * ```typescript
+ * const result = await purchase('credits_100', 'inapp');
+ * await consumePurchase(result.purchaseToken);
+ * // user can now buy credits_100 again
+ * ```
+ */
+export async function consumePurchase(purchaseToken: string): Promise<void> {
+  await invoke("plugin:iap|consume_purchase", {
+    payload: {
+      purchaseToken,
+    },
+  });
 }
 
 /**
