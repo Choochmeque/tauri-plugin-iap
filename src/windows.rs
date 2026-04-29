@@ -37,10 +37,15 @@ struct WindowsPurchaseTokenV1 {
 }
 
 impl WindowsPurchaseTokenV1 {
-    fn encode(&self) -> String {
-        // serde_json on a struct of u8/String/i64/u32 cannot fail.
-        let bytes = serde_json::to_vec(self).expect("envelope is always serializable");
-        URL_SAFE_NO_PAD.encode(&bytes)
+    fn encode(&self) -> crate::Result<String> {
+        let bytes = serde_json::to_vec(self).map_err(|e| {
+            crate::Error::PluginInvoke(PluginInvokeError::InvokeRejected(ErrorResponse {
+                code: Some("internalError".to_string()),
+                message: Some(format!("Failed to encode purchase token: {e}")),
+                data: (),
+            }))
+        })?;
+        Ok(URL_SAFE_NO_PAD.encode(&bytes))
     }
 
     fn decode(s: &str) -> crate::Result<Self> {
@@ -432,8 +437,13 @@ impl<R: Runtime> Iap<R> {
                 }))
             })?
             .as_millis();
-        let purchase_time =
-            i64::try_from(purchase_time_ms).expect("Unix millis fit in i64 until year 292M");
+        let purchase_time = i64::try_from(purchase_time_ms).map_err(|e| {
+            crate::Error::PluginInvoke(PluginInvokeError::InvokeRejected(ErrorResponse {
+                code: Some("systemTimeError".to_string()),
+                message: Some(format!("System time out of i64 range: {e}")),
+                data: (),
+            }))
+        })?;
 
         // Sub-millisecond entropy so two purchases in the same `purchase_time` ms still differ.
         let nonce = std::time::SystemTime::now()
@@ -445,7 +455,7 @@ impl<R: Runtime> Iap<R> {
             purchase_time,
             nonce,
         }
-        .encode();
+        .encode()?;
 
         let purchase = Purchase {
             order_id: Some(purchase_token.clone()),
@@ -533,7 +543,13 @@ impl<R: Runtime> Iap<R> {
                     }))
                 })?
                 .as_millis();
-            i64::try_from(now_ms).expect("Unix millis fit in i64 until year 292M")
+            i64::try_from(now_ms).map_err(|e| {
+                crate::Error::PluginInvoke(PluginInvokeError::InvokeRejected(ErrorResponse {
+                    code: Some("systemTimeError".to_string()),
+                    message: Some(format!("System time out of i64 range: {e}")),
+                    data: (),
+                }))
+            })?
         };
 
         let purchase_state = if is_active {
@@ -784,7 +800,7 @@ mod tests {
     #[test]
     fn test_envelope_round_trip_typical() {
         let original = sample_envelope("9MSPC6MP8FM4");
-        let encoded = original.encode();
+        let encoded = original.encode().expect("encode must succeed");
         let decoded =
             WindowsPurchaseTokenV1::decode(&encoded).expect("just-encoded token must decode");
         assert_envelope_eq(&original, &decoded);
@@ -793,7 +809,7 @@ mod tests {
     #[test]
     fn test_envelope_round_trip_empty_product_id() {
         let original = sample_envelope("");
-        let encoded = original.encode();
+        let encoded = original.encode().expect("encode must succeed");
         let decoded =
             WindowsPurchaseTokenV1::decode(&encoded).expect("just-encoded token must decode");
         assert_envelope_eq(&original, &decoded);
@@ -802,7 +818,7 @@ mod tests {
     #[test]
     fn test_envelope_round_trip_long_product_id() {
         let original = sample_envelope(&"x".repeat(512));
-        let encoded = original.encode();
+        let encoded = original.encode().expect("encode must succeed");
         let decoded =
             WindowsPurchaseTokenV1::decode(&encoded).expect("just-encoded token must decode");
         assert_envelope_eq(&original, &decoded);
@@ -810,7 +826,9 @@ mod tests {
 
     #[test]
     fn test_envelope_encoded_uses_url_safe_alphabet() {
-        let encoded = sample_envelope("9MSPC6MP8FM4").encode();
+        let encoded = sample_envelope("9MSPC6MP8FM4")
+            .encode()
+            .expect("encode must succeed");
         for ch in encoded.chars() {
             assert!(
                 ch.is_ascii_alphanumeric() || ch == '-' || ch == '_',
@@ -822,7 +840,9 @@ mod tests {
     #[test]
     fn test_envelope_encoding_is_stable() {
         let env = sample_envelope("9MSPC6MP8FM4");
-        assert_eq!(env.encode(), env.encode());
+        let a = env.encode().expect("encode must succeed");
+        let b = env.encode().expect("encode must succeed");
+        assert_eq!(a, b);
     }
 
     #[test]
