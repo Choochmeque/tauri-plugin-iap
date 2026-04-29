@@ -129,7 +129,7 @@ impl<R: Runtime> Iap<R> {
     }
 
     /// Convert Windows `DateTime` to Unix timestamp in milliseconds
-    const fn datetime_to_unix_millis(datetime: &DateTime) -> i64 {
+    const fn datetime_to_unix_millis(datetime: DateTime) -> i64 {
         // Windows DateTime is in 100-nanosecond intervals since January 1, 1601
         // Convert to Unix timestamp (milliseconds since January 1, 1970)
         const WINDOWS_TICK: i64 = 10_000_000;
@@ -207,7 +207,7 @@ impl<R: Runtime> Iap<R> {
             let item = iterator.Current()?;
             let store_product = item.Value()?;
 
-            let product = self.convert_store_product_to_product(&store_product, &product_type)?;
+            let product = Self::convert_store_product_to_product(&store_product, &product_type)?;
             products.push(product);
 
             iterator.MoveNext()?;
@@ -217,7 +217,6 @@ impl<R: Runtime> Iap<R> {
     }
 
     fn convert_store_product_to_product(
-        &self,
         store_product: &StoreProduct,
         product_type: &str,
     ) -> crate::Result<Product> {
@@ -280,9 +279,8 @@ impl<R: Runtime> Iap<R> {
                         match billing_period_unit.0 {
                             0 => "D", // Day
                             1 => "W", // Week
-                            2 => "M", // Month
                             3 => "Y", // Year
-                            _ => "M",
+                            _ => "M", // Month (default)
                         }
                     );
 
@@ -306,10 +304,10 @@ impl<R: Runtime> Iap<R> {
                 }
             }
 
-            if !offers.is_empty() {
-                Some(offers)
-            } else {
+            if offers.is_empty() {
                 None
+            } else {
+                Some(offers)
             }
         } else {
             None
@@ -327,6 +325,7 @@ impl<R: Runtime> Iap<R> {
         })
     }
 
+    #[allow(clippy::too_many_lines)]
     pub async fn purchase(&self, payload: PurchaseRequest) -> crate::Result<Purchase> {
         let context = self.get_store_context()?;
 
@@ -359,8 +358,7 @@ impl<R: Runtime> Iap<R> {
             let properties = StorePurchaseProperties::Create(&HSTRING::from(&payload.product_id))?;
 
             // Set the SKU ID for subscription offers
-            properties
-                .SetExtendedJsonData(&HSTRING::from(format!(r#"{{"skuId":"{}"}}"#, token)))?;
+            properties.SetExtendedJsonData(&HSTRING::from(format!(r#"{{"skuId":"{token}"}}"#)))?;
 
             context
                 .RequestPurchaseWithPurchasePropertiesAsync(&store_id, &properties)
@@ -421,7 +419,7 @@ impl<R: Runtime> Iap<R> {
         let error_message = purchase_result
             .ExtendedError()
             .ok()
-            .map_or_else(String::new, |error| error.message());
+            .map_or_else(String::new, windows::core::HRESULT::message);
 
         // Generate purchase details
         let purchase_time_ms = std::time::SystemTime::now()
@@ -454,7 +452,7 @@ impl<R: Runtime> Iap<R> {
             package_name: product_title,
             product_id: product.product_id.clone(),
             purchase_time,
-            purchase_token: purchase_token.clone(),
+            purchase_token,
             purchase_state,
             is_auto_renewing: product.product_type == "subs",
             is_acknowledged: true, // Windows Store handles acknowledgment
@@ -519,7 +517,7 @@ impl<R: Runtime> Iap<R> {
         let is_active = license.IsActive()?;
 
         let expiration_date = license.ExpirationDate()?;
-        let expiration_millis = Self::datetime_to_unix_millis(&expiration_date);
+        let expiration_millis = Self::datetime_to_unix_millis(expiration_date);
 
         // Estimate purchase time (30 days before expiration for monthly subs)
         let purchase_time = if product_type == "subs" && expiration_millis > 0 {
@@ -637,7 +635,7 @@ impl<R: Runtime> Iap<R> {
 
             let is_active = license.IsActive()?;
             let expiration_date = license.ExpirationDate()?;
-            let expiration_time = Self::datetime_to_unix_millis(&expiration_date);
+            let expiration_time = Self::datetime_to_unix_millis(expiration_date);
 
             let purchase_time = if product_type == "subs" && expiration_time > 0 {
                 expiration_time - (30 * 24 * 60 * 60 * 1000)
@@ -693,7 +691,7 @@ mod tests {
         let datetime = DateTime {
             UniversalTime: 116_444_736_000_000_000,
         };
-        let result = Iap::<tauri::Wry>::datetime_to_unix_millis(&datetime);
+        let result = Iap::<tauri::Wry>::datetime_to_unix_millis(datetime);
         assert_eq!(result, 0);
     }
 
@@ -705,7 +703,7 @@ mod tests {
         let datetime = DateTime {
             UniversalTime: 133_445_856_000_000_000,
         };
-        let result = Iap::<tauri::Wry>::datetime_to_unix_millis(&datetime);
+        let result = Iap::<tauri::Wry>::datetime_to_unix_millis(datetime);
         assert_eq!(result, 1_699_920_000_000);
     }
 
@@ -717,7 +715,7 @@ mod tests {
         let datetime = DateTime {
             UniversalTime: 116_413_200_000_000_000,
         };
-        let result = Iap::<tauri::Wry>::datetime_to_unix_millis(&datetime);
+        let result = Iap::<tauri::Wry>::datetime_to_unix_millis(datetime);
         assert!(result < 0);
     }
 
@@ -729,7 +727,7 @@ mod tests {
         let datetime = DateTime {
             UniversalTime: 125_911_584_000_000_000,
         };
-        let result = Iap::<tauri::Wry>::datetime_to_unix_millis(&datetime);
+        let result = Iap::<tauri::Wry>::datetime_to_unix_millis(datetime);
         assert_eq!(result, 946_684_800_000);
     }
 
@@ -740,7 +738,7 @@ mod tests {
         let datetime = DateTime {
             UniversalTime: 116_444_736_000_000_000 + 5_000_000, // epoch + 500ms in 100-ns ticks
         };
-        let result = Iap::<tauri::Wry>::datetime_to_unix_millis(&datetime);
+        let result = Iap::<tauri::Wry>::datetime_to_unix_millis(datetime);
         // Since we divide by WINDOWS_TICK (10_000_000), we truncate sub-second values
         assert_eq!(result, 0);
     }
@@ -751,7 +749,7 @@ mod tests {
         let datetime = DateTime {
             UniversalTime: 116_444_736_000_000_000 + 10_000_000, // epoch + 1 second in 100-ns ticks
         };
-        let result = Iap::<tauri::Wry>::datetime_to_unix_millis(&datetime);
+        let result = Iap::<tauri::Wry>::datetime_to_unix_millis(datetime);
         assert_eq!(result, 1000);
     }
 
@@ -762,7 +760,7 @@ mod tests {
         let datetime = DateTime {
             UniversalTime: 157_766_880_000_000_000,
         };
-        let result = Iap::<tauri::Wry>::datetime_to_unix_millis(&datetime);
+        let result = Iap::<tauri::Wry>::datetime_to_unix_millis(datetime);
         // Should be approximately 4102444800000 ms
         assert!(result > 4_000_000_000_000);
     }
