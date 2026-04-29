@@ -78,7 +78,7 @@ pub struct Iap<R: Runtime> {
 }
 
 impl<R: Runtime> Iap<R> {
-    /// Get or create the StoreContext instance
+    /// Get or create the `StoreContext` instance
     fn get_store_context(&self) -> crate::Result<StoreContext> {
         let mut context_guard = self.store_context.write().map_err(|e| {
             crate::Error::PluginInvoke(PluginInvokeError::InvokeRejected(ErrorResponse {
@@ -128,8 +128,8 @@ impl<R: Runtime> Iap<R> {
             .clone())
     }
 
-    /// Convert Windows DateTime to Unix timestamp in milliseconds
-    fn datetime_to_unix_millis(datetime: &DateTime) -> i64 {
+    /// Convert Windows `DateTime` to Unix timestamp in milliseconds
+    const fn datetime_to_unix_millis(datetime: &DateTime) -> i64 {
         // Windows DateTime is in 100-nanosecond intervals since January 1, 1601
         // Convert to Unix timestamp (milliseconds since January 1, 1970)
         const WINDOWS_TICK: i64 = 10_000_000;
@@ -141,7 +141,7 @@ impl<R: Runtime> Iap<R> {
         unix_seconds * 1000 // Convert to milliseconds
     }
 
-    /// Emit an event to the frontend (equivalent to iOS/Android `trigger` method).
+    /// Emit an event to the frontend (equivalent to `iOS`/Android `trigger` method).
     fn trigger<S: serde::Serialize + Clone>(&self, event: &str, payload: S) {
         let _ = self.app_handle.emit(event, payload);
     }
@@ -376,8 +376,9 @@ impl<R: Runtime> Iap<R> {
         let status = purchase_result.Status()?;
 
         let purchase_state = match status {
-            StorePurchaseStatus::Succeeded => PurchaseStateValue::Purchased,
-            StorePurchaseStatus::AlreadyPurchased => PurchaseStateValue::Purchased,
+            StorePurchaseStatus::Succeeded | StorePurchaseStatus::AlreadyPurchased => {
+                PurchaseStateValue::Purchased
+            }
             StorePurchaseStatus::NotPurchased => {
                 return Err(crate::Error::PluginInvoke(
                     PluginInvokeError::InvokeRejected(ErrorResponse {
@@ -417,12 +418,10 @@ impl<R: Runtime> Iap<R> {
         };
 
         // Get extended error info if available
-        let extended_error = purchase_result.ExtendedError().ok();
-        let error_message = if let Some(error) = extended_error {
-            error.message()
-        } else {
-            String::new()
-        };
+        let error_message = purchase_result
+            .ExtendedError()
+            .ok()
+            .map_or_else(String::new, |error| error.message());
 
         // Generate purchase details
         let purchase_time_ms = std::time::SystemTime::now()
@@ -845,7 +844,7 @@ mod tests {
         let bytes = serde_json::to_vec(&serde_json::json!({
             "v": 99,
             "product_id": "9MSPC6MP8FM4",
-            "purchase_time": 1714387200000_i64,
+            "purchase_time": 1_714_387_200_000_i64,
             "nonce": 42,
         }))
         .expect("static JSON must serialize");
@@ -857,7 +856,7 @@ mod tests {
     fn test_envelope_decode_rejects_missing_product_id() {
         let bytes = serde_json::to_vec(&serde_json::json!({
             "v": 1,
-            "purchase_time": 1714387200000_i64,
+            "purchase_time": 1_714_387_200_000_i64,
             "nonce": 42,
         }))
         .expect("static JSON must serialize");
