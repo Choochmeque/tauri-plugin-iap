@@ -63,7 +63,7 @@ impl WindowsPurchaseTokenV1 {
 #[allow(clippy::unnecessary_wraps)]
 pub fn init<R: Runtime, C: DeserializeOwned>(
     app: &AppHandle<R>,
-    _api: PluginApi<R, C>,
+    _api: &PluginApi<R, C>,
 ) -> crate::Result<Iap<R>> {
     Ok(Iap {
         app_handle: app.clone(),
@@ -83,7 +83,7 @@ impl<R: Runtime> Iap<R> {
         let mut context_guard = self.store_context.write().map_err(|e| {
             crate::Error::PluginInvoke(PluginInvokeError::InvokeRejected(ErrorResponse {
                 code: Some("internalError".to_string()),
-                message: Some(format!("Failed to acquire write lock: {:?}", e)),
+                message: Some(format!("Failed to acquire write lock: {e:?}")),
                 data: (),
             }))
         })?;
@@ -102,7 +102,7 @@ impl<R: Runtime> Iap<R> {
             let hwnd = window.hwnd().map_err(|e| {
                 crate::Error::PluginInvoke(PluginInvokeError::InvokeRejected(ErrorResponse {
                     code: Some("windowError".to_string()),
-                    message: Some(format!("Failed to get window handle: {:?}", e)),
+                    message: Some(format!("Failed to get window handle: {e:?}")),
                     data: (),
                 }))
             })?;
@@ -132,8 +132,8 @@ impl<R: Runtime> Iap<R> {
     fn datetime_to_unix_millis(datetime: &DateTime) -> i64 {
         // Windows DateTime is in 100-nanosecond intervals since January 1, 1601
         // Convert to Unix timestamp (milliseconds since January 1, 1970)
-        const WINDOWS_TICK: i64 = 10000000;
-        const SEC_TO_UNIX_EPOCH: i64 = 11644473600;
+        const WINDOWS_TICK: i64 = 10_000_000;
+        const SEC_TO_UNIX_EPOCH: i64 = 11_644_473_600;
 
         let windows_ticks = datetime.UniversalTime;
         let seconds_since_1601 = windows_ticks / WINDOWS_TICK;
@@ -244,6 +244,11 @@ impl<R: Runtime> Iap<R> {
             .parse::<f64>()
             .unwrap_or(0.0);
 
+        #[allow(
+            clippy::cast_possible_truncation,
+            clippy::cast_sign_loss,
+            clippy::cast_precision_loss
+        )]
         let price_amount_micros = (price_value * 1_000_000.0) as i64;
 
         // Handle subscription offers if this is a subscription product
@@ -420,22 +425,23 @@ impl<R: Runtime> Iap<R> {
         };
 
         // Generate purchase details
-        let purchase_time = std::time::SystemTime::now()
+        let purchase_time_ms = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .map_err(|e| {
                 crate::Error::PluginInvoke(PluginInvokeError::InvokeRejected(ErrorResponse {
                     code: Some("systemTimeError".to_string()),
-                    message: Some(format!("Failed to get system time: {:?}", e)),
+                    message: Some(format!("Failed to get system time: {e:?}")),
                     data: (),
                 }))
             })?
-            .as_millis() as i64;
+            .as_millis();
+        let purchase_time =
+            i64::try_from(purchase_time_ms).expect("Unix millis fit in i64 until year 292M");
 
         // Sub-millisecond entropy so two purchases in the same `purchase_time` ms still differ.
         let nonce = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
-            .map(|d| d.subsec_nanos())
-            .unwrap_or(0);
+            .map_or(0, |d| d.subsec_nanos());
         let purchase_token = WindowsPurchaseTokenV1 {
             v: 1,
             product_id: product.product_id.clone(),
@@ -520,16 +526,17 @@ impl<R: Runtime> Iap<R> {
         let purchase_time = if product_type == "subs" && expiration_millis > 0 {
             expiration_millis - (30 * 24 * 60 * 60 * 1000)
         } else {
-            std::time::SystemTime::now()
+            let now_ms = std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
                 .map_err(|e| {
                     crate::Error::PluginInvoke(PluginInvokeError::InvokeRejected(ErrorResponse {
                         code: Some("systemTimeError".to_string()),
-                        message: Some(format!("Failed to get system time: {:?}", e)),
+                        message: Some(format!("Failed to get system time: {e:?}")),
                         data: (),
                     }))
                 })?
-                .as_millis() as i64
+                .as_millis();
+            i64::try_from(now_ms).expect("Unix millis fit in i64 until year 292M")
         };
 
         let purchase_state = if is_active {
@@ -548,8 +555,7 @@ impl<R: Runtime> Iap<R> {
             is_auto_renewing: product_type == "subs" && is_active,
             is_acknowledged: true,
             original_json: format!(
-                r#"{{"isActive":{},"expirationDate":{}}}"#,
-                is_active, expiration_millis
+                r#"{{"isActive":{is_active},"expirationDate":{expiration_millis}}}"#
             ),
             signature: String::new(),
             original_id: None,
@@ -686,7 +692,7 @@ mod tests {
         // Unix epoch: January 1, 1970 00:00:00 UTC
         // In Windows ticks: 116444736000000000 (100-nanosecond intervals since Jan 1, 1601)
         let datetime = DateTime {
-            UniversalTime: 116444736000000000,
+            UniversalTime: 116_444_736_000_000_000,
         };
         let result = Iap::<tauri::Wry>::datetime_to_unix_millis(&datetime);
         assert_eq!(result, 0);
@@ -698,10 +704,10 @@ mod tests {
         // Unix timestamp: 1699920000000 ms
         // Windows ticks: 133445856000000000
         let datetime = DateTime {
-            UniversalTime: 133445856000000000,
+            UniversalTime: 133_445_856_000_000_000,
         };
         let result = Iap::<tauri::Wry>::datetime_to_unix_millis(&datetime);
-        assert_eq!(result, 1699920000000);
+        assert_eq!(result, 1_699_920_000_000);
     }
 
     #[test]
@@ -710,7 +716,7 @@ mod tests {
         // January 1, 1969 00:00:00 UTC
         // Windows ticks: 116413200000000000
         let datetime = DateTime {
-            UniversalTime: 116413200000000000,
+            UniversalTime: 116_413_200_000_000_000,
         };
         let result = Iap::<tauri::Wry>::datetime_to_unix_millis(&datetime);
         assert!(result < 0);
@@ -722,10 +728,10 @@ mod tests {
         // Unix timestamp: 946684800000 ms
         // Windows ticks: 125911584000000000
         let datetime = DateTime {
-            UniversalTime: 125911584000000000,
+            UniversalTime: 125_911_584_000_000_000,
         };
         let result = Iap::<tauri::Wry>::datetime_to_unix_millis(&datetime);
-        assert_eq!(result, 946684800000);
+        assert_eq!(result, 946_684_800_000);
     }
 
     #[test]
@@ -733,7 +739,7 @@ mod tests {
         // Test that sub-second precision is handled correctly (truncated to seconds then converted to ms)
         // The function converts to seconds first, losing sub-second precision
         let datetime = DateTime {
-            UniversalTime: 116444736000000000 + 5000000, // epoch + 500ms in 100-ns ticks
+            UniversalTime: 116_444_736_000_000_000 + 5_000_000, // epoch + 500ms in 100-ns ticks
         };
         let result = Iap::<tauri::Wry>::datetime_to_unix_millis(&datetime);
         // Since we divide by WINDOWS_TICK (10_000_000), we truncate sub-second values
@@ -744,7 +750,7 @@ mod tests {
     fn test_datetime_to_unix_millis_one_second_after_epoch() {
         // 1 second after Unix epoch
         let datetime = DateTime {
-            UniversalTime: 116444736000000000 + 10000000, // epoch + 1 second in 100-ns ticks
+            UniversalTime: 116_444_736_000_000_000 + 10_000_000, // epoch + 1 second in 100-ns ticks
         };
         let result = Iap::<tauri::Wry>::datetime_to_unix_millis(&datetime);
         assert_eq!(result, 1000);
@@ -755,18 +761,18 @@ mod tests {
         // January 1, 2100 00:00:00 UTC
         // Windows ticks: 157766880000000000
         let datetime = DateTime {
-            UniversalTime: 157766880000000000,
+            UniversalTime: 157_766_880_000_000_000,
         };
         let result = Iap::<tauri::Wry>::datetime_to_unix_millis(&datetime);
         // Should be approximately 4102444800000 ms
-        assert!(result > 4000000000000);
+        assert!(result > 4_000_000_000_000);
     }
 
     fn sample_envelope(product_id: &str) -> WindowsPurchaseTokenV1 {
         WindowsPurchaseTokenV1 {
             v: 1,
             product_id: product_id.to_string(),
-            purchase_time: 1714387200000,
+            purchase_time: 1_714_387_200_000,
             nonce: 42,
         }
     }

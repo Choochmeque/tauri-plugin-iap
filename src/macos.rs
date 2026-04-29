@@ -109,7 +109,7 @@ fn trigger(event: String, payload: String) -> Result<(), ffi::FFIResult> {
 #[allow(clippy::unnecessary_wraps)]
 pub fn init<R: Runtime, C: DeserializeOwned>(
     app: &AppHandle<R>,
-    _api: PluginApi<R, C>,
+    _api: &PluginApi<R, C>,
 ) -> crate::Result<Iap<R>> {
     Ok(Iap {
         _app: app.clone(),

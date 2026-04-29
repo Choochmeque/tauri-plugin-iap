@@ -63,13 +63,13 @@ pub fn init<R: Runtime>() -> TauriPlugin<R> {
             #[cfg(desktop)]
             listeners::init();
             #[cfg(target_os = "macos")]
-            let iap = macos::init(app, api)?;
+            let iap = macos::init(app, &api)?;
             #[cfg(mobile)]
-            let iap = mobile::init(app, api)?;
+            let iap = mobile::init(app, &api)?;
             #[cfg(target_os = "windows")]
-            let iap = windows::init(app, api)?;
+            let iap = windows::init(app, &api)?;
             #[cfg(target_os = "linux")]
-            let iap = desktop::init(app, api)?;
+            let iap = desktop::init(app, &api)?;
             app.manage(iap);
             Ok(())
         })

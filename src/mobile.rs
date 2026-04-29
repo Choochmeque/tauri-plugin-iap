@@ -4,7 +4,11 @@ use tauri::{
     plugin::{PluginApi, PluginHandle},
 };
 
-use crate::models::*;
+use crate::models::{
+    AcknowledgePurchaseRequest, ConsumePurchaseRequest, GetProductStatusRequest,
+    GetProductsRequest, GetProductsResponse, GetPurchaseHistoryResponse, ProductStatus, Purchase,
+    PurchaseRequest, RestorePurchasesRequest, RestorePurchasesResponse,
+};
 
 #[cfg(target_os = "android")]
 const PLUGIN_IDENTIFIER: &str = "app.tauri.iap";
@@ -15,7 +19,7 @@ tauri::ios_plugin_binding!(init_plugin_iap);
 // initializes the Kotlin or Swift plugin classes
 pub fn init<R: Runtime, C: DeserializeOwned>(
     _app: &AppHandle<R>,
-    api: PluginApi<R, C>,
+    api: &PluginApi<R, C>,
 ) -> crate::Result<Iap<R>> {
     #[cfg(target_os = "android")]
     let handle = api.register_android_plugin(PLUGIN_IDENTIFIER, "IapPlugin")?;
