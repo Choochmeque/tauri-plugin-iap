@@ -1,8 +1,14 @@
+// Linux is unsupported — every method is a stub that returns `Err`.
+
 use serde::de::DeserializeOwned;
 use tauri::{AppHandle, Runtime, plugin::PluginApi};
 
-use crate::models::*;
+use crate::models::{
+    GetProductsResponse, GetPurchaseHistoryResponse, ProductStatus, Purchase, PurchaseRequest,
+    RestorePurchasesResponse,
+};
 
+#[allow(clippy::unnecessary_wraps)]
 pub fn init<R: Runtime, C: DeserializeOwned>(
     app: &AppHandle<R>,
     _api: PluginApi<R, C>,
@@ -13,6 +19,7 @@ pub fn init<R: Runtime, C: DeserializeOwned>(
 /// Access to the iap APIs.
 pub struct Iap<R: Runtime>(AppHandle<R>);
 
+#[allow(clippy::unused_async, clippy::unused_self)]
 impl<R: Runtime> Iap<R> {
     pub async fn get_products(
         &self,

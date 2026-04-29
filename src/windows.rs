@@ -17,7 +17,10 @@ use windows::{
 use windows_collections::IIterable;
 
 use crate::error::{ErrorResponse, PluginInvokeError};
-use crate::models::*;
+use crate::models::{
+    GetProductsResponse, PricingPhase, Product, ProductStatus, Purchase, PurchaseRequest,
+    PurchaseStateValue, RestorePurchasesResponse, SubscriptionOffer,
+};
 use std::sync::{Arc, RwLock};
 
 /// Microsoft Store has no native per-transaction token, but our cross-platform API
@@ -57,6 +60,7 @@ impl WindowsPurchaseTokenV1 {
     }
 }
 
+#[allow(clippy::unnecessary_wraps)]
 pub fn init<R: Runtime, C: DeserializeOwned>(
     app: &AppHandle<R>,
     _api: PluginApi<R, C>,
@@ -142,6 +146,7 @@ impl<R: Runtime> Iap<R> {
         let _ = self.app_handle.emit(event, payload);
     }
 
+    #[allow(clippy::unused_async)]
     pub async fn get_products(
         &self,
         product_ids: Vec<String>,
@@ -463,6 +468,7 @@ impl<R: Runtime> Iap<R> {
         Ok(purchase)
     }
 
+    #[allow(clippy::unused_async)]
     pub async fn restore_purchases(
         &self,
         product_type: String,
@@ -552,10 +558,12 @@ impl<R: Runtime> Iap<R> {
     }
 
     /// No-op: Microsoft Store auto-acknowledges purchases. Method exists for API parity.
+    #[allow(clippy::unused_async, clippy::unused_self)]
     pub async fn acknowledge_purchase(&self, _purchase_token: String) -> crate::Result<()> {
         Ok(())
     }
 
+    #[allow(clippy::unused_async)]
     pub async fn consume_purchase(&self, purchase_token: String) -> crate::Result<()> {
         let envelope = WindowsPurchaseTokenV1::decode(&purchase_token)?;
         let context = self.get_store_context()?;
@@ -600,6 +608,7 @@ impl<R: Runtime> Iap<R> {
         }
     }
 
+    #[allow(clippy::unused_async)]
     pub async fn get_product_status(
         &self,
         product_id: String,
