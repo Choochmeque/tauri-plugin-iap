@@ -86,8 +86,11 @@ pub fn register_listener(
 }
 
 /// Remove a previously registered listener by event name and channel ID.
+// Tauri commands require owned/deserializable types for args, so `event` must be
+// `String` even though the body only borrows it.
+#[allow(clippy::needless_pass_by_value)]
 #[tauri::command]
-pub fn remove_listener(event: &str, channel_id: u32) -> crate::Result<()> {
+pub fn remove_listener(event: String, channel_id: u32) -> crate::Result<()> {
     let listeners = LISTENERS.get().ok_or_else(|| {
         crate::Error::from(PluginInvokeError::InvokeRejected(ErrorResponse {
             code: None,
@@ -103,7 +106,7 @@ pub fn remove_listener(event: &str, channel_id: u32) -> crate::Result<()> {
                 data: (),
             }))
         })?;
-        if let Some(channels) = guard.get_mut(event) {
+        if let Some(channels) = guard.get_mut(&event) {
             channels.remove(&channel_id);
         }
     }
