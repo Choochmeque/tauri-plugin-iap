@@ -4,7 +4,11 @@ use tauri::{
     plugin::{PluginApi, PluginHandle},
 };
 
-use crate::models::*;
+use crate::models::{
+    AcknowledgePurchaseRequest, ConsumePurchaseRequest, GetProductStatusRequest,
+    GetProductsRequest, GetProductsResponse, GetPurchaseHistoryResponse, ProductStatus, Purchase,
+    PurchaseRequest, RestorePurchasesRequest, RestorePurchasesResponse,
+};
 
 #[cfg(target_os = "android")]
 const PLUGIN_IDENTIFIER: &str = "app.tauri.iap";
@@ -15,7 +19,7 @@ tauri::ios_plugin_binding!(init_plugin_iap);
 // initializes the Kotlin or Swift plugin classes
 pub fn init<R: Runtime, C: DeserializeOwned>(
     _app: &AppHandle<R>,
-    api: PluginApi<R, C>,
+    api: &PluginApi<R, C>,
 ) -> crate::Result<Iap<R>> {
     #[cfg(target_os = "android")]
     let handle = api.register_android_plugin(PLUGIN_IDENTIFIER, "IapPlugin")?;
@@ -69,15 +73,19 @@ impl<R: Runtime> Iap<R> {
             .map_err(Into::into)
     }
 
-    pub async fn acknowledge_purchase(
-        &self,
-        purchase_token: String,
-    ) -> crate::Result<AcknowledgePurchaseResponse> {
+    pub async fn acknowledge_purchase(&self, purchase_token: String) -> crate::Result<()> {
         self.0
             .run_mobile_plugin_async(
                 "acknowledgePurchase",
                 AcknowledgePurchaseRequest { purchase_token },
             )
+            .await
+            .map_err(Into::into)
+    }
+
+    pub async fn consume_purchase(&self, purchase_token: String) -> crate::Result<()> {
+        self.0
+            .run_mobile_plugin_async("consumePurchase", ConsumePurchaseRequest { purchase_token })
             .await
             .map_err(Into::into)
     }

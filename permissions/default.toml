@@ -1,3 +1,3 @@
 [default]
 description = "Default permissions for the plugin"
-permissions = ["allow-register-listener", "allow-remove-listener", "allow-initialize", "allow-get-products", "allow-purchase", "allow-restore-purchases", "allow-get-purchase-history", "allow-acknowledge-purchase", "allow-get-product-status"]
+permissions = ["allow-register-listener", "allow-remove-listener", "allow-initialize", "allow-get-products", "allow-purchase", "allow-restore-purchases", "allow-get-purchase-history", "allow-acknowledge-purchase", "allow-consume-purchase", "allow-get-product-status"]

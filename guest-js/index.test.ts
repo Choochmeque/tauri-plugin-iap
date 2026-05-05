@@ -6,6 +6,7 @@ import {
   restorePurchases,
   getPurchaseHistory,
   acknowledgePurchase,
+  consumePurchase,
   getProductStatus,
   onPurchaseUpdated,
   PurchaseState,
@@ -13,7 +14,6 @@ import {
   type Purchase,
   type RestorePurchasesResponse,
   type GetPurchaseHistoryResponse,
-  type AcknowledgePurchaseResponse,
   type ProductStatus,
   type PurchaseOptions,
 } from "./index";
@@ -313,26 +313,47 @@ describe("IAP Plugin", () => {
 
   describe("acknowledgePurchase", () => {
     it("should acknowledge purchase with token", async () => {
-      const mockResponse: AcknowledgePurchaseResponse = { success: true };
-      vi.mocked(invoke).mockResolvedValue(mockResponse);
+      vi.mocked(invoke).mockResolvedValue(undefined);
 
-      const result = await acknowledgePurchase("TOKEN123");
+      await expect(acknowledgePurchase("TOKEN123")).resolves.toBeUndefined();
 
       expect(invoke).toHaveBeenCalledWith("plugin:iap|acknowledge_purchase", {
         payload: {
           purchaseToken: "TOKEN123",
         },
       });
-      expect(result).toEqual(mockResponse);
     });
 
-    it("should handle acknowledgment failure", async () => {
-      const mockResponse: AcknowledgePurchaseResponse = { success: false };
-      vi.mocked(invoke).mockResolvedValue(mockResponse);
+    it("should propagate failure from invoke", async () => {
+      const error = new Error("Failed to acknowledge purchase: ...");
+      vi.mocked(invoke).mockRejectedValue(error);
 
-      const result = await acknowledgePurchase("TOKEN123");
+      await expect(acknowledgePurchase("TOKEN123")).rejects.toThrow(
+        "Failed to acknowledge purchase",
+      );
+    });
+  });
 
-      expect(result.success).toBe(false);
+  describe("consumePurchase", () => {
+    it("should consume purchase with token", async () => {
+      vi.mocked(invoke).mockResolvedValue(undefined);
+
+      await expect(consumePurchase("TOKEN123")).resolves.toBeUndefined();
+
+      expect(invoke).toHaveBeenCalledWith("plugin:iap|consume_purchase", {
+        payload: {
+          purchaseToken: "TOKEN123",
+        },
+      });
+    });
+
+    it("should propagate failure from invoke", async () => {
+      const error = new Error("Failed to consume purchase: ...");
+      vi.mocked(invoke).mockRejectedValue(error);
+
+      await expect(consumePurchase("TOKEN123")).rejects.toThrow(
+        "Failed to consume purchase",
+      );
     });
   });
 

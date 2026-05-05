@@ -10,6 +10,7 @@ const COMMANDS: &[&str] = &[
     "restore_purchases",
     "get_purchase_history",
     "acknowledge_purchase",
+    "consume_purchase",
     "get_product_status",
 ];
 
@@ -80,18 +81,17 @@ fn compile_swift() {
         .wait_with_output()
         .expect("Failed to wait for swift build output");
 
-    if !exit_status.status.success() {
-        panic!(
-            r"
+    assert!(
+        exit_status.status.success(),
+        r"
 Swift build failed for target: {}
 Stderr: {}
 Stdout: {}
 ",
-            target_triple,
-            String::from_utf8(exit_status.stderr).expect("Stderr must be valid UTF-8"),
-            String::from_utf8(exit_status.stdout).expect("Stdout must be valid UTF-8"),
-        )
-    }
+        target_triple,
+        String::from_utf8(exit_status.stderr).expect("Stderr must be valid UTF-8"),
+        String::from_utf8(exit_status.stdout).expect("Stdout must be valid UTF-8"),
+    );
 }
 
 #[cfg(target_os = "macos")]

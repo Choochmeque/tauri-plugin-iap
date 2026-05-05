@@ -47,6 +47,11 @@ class AcknowledgePurchaseArgs {
 }
 
 @InvokeArg
+class ConsumePurchaseArgs {
+    var purchaseToken: String? = null
+}
+
+@InvokeArg
 class GetProductStatusArgs {
     var productId: String = ""
     var productType: String = "subs" // "subs" or "inapp"
@@ -320,13 +325,40 @@ class IapPlugin(private val activity: Activity): Plugin(activity), PurchasesUpda
         
         billingClient.acknowledgePurchase(acknowledgePurchaseParams) { billingResult ->
             if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-                invoke.resolve(JSObject().put("success", true))
+                invoke.resolve()
             } else {
                 invoke.reject("Failed to acknowledge purchase: ${billingResult.debugMessage}")
             }
         }
     }
-    
+
+    @Command
+    fun consumePurchase(invoke: Invoke) {
+        val purchaseToken = invoke.parseArgs(ConsumePurchaseArgs::class.java).purchaseToken
+
+        if (purchaseToken == null) {
+            invoke.reject("Purchase token is required")
+            return
+        }
+
+        if (!billingClient.isReady) {
+            invoke.reject("Billing client not ready")
+            return
+        }
+
+        val consumeParams = ConsumeParams.newBuilder()
+            .setPurchaseToken(purchaseToken)
+            .build()
+
+        billingClient.consumeAsync(consumeParams) { billingResult, _ ->
+            if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
+                invoke.resolve()
+            } else {
+                invoke.reject("Failed to consume purchase: ${billingResult.debugMessage}")
+            }
+        }
+    }
+
     @Command
     fun getProductStatus(invoke: Invoke) {
         val args = invoke.parseArgs(GetProductStatusArgs::class.java)

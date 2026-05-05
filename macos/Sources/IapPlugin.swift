@@ -201,11 +201,6 @@ class IapPlugin {
         return try serializeToJSON(["purchases": purchases])
     }
 
-    public func acknowledgePurchase(purchaseToken: RustString) async throws(FFIResult) -> String {
-        // Not needed on Apple platforms
-        return try serializeToJSON(["success": true])
-    }
-
     public func getProductStatus(productId: RustString, productType: RustString)
         async throws(FFIResult) -> String
     {

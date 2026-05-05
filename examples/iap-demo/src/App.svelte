@@ -6,6 +6,7 @@
     restorePurchases,
     getProductStatus,
     acknowledgePurchase,
+    consumePurchase,
     onPurchaseUpdated
   } from 'tauri-plugin-iap-api'
 
@@ -19,6 +20,7 @@
 	let productStatus = null
 	let purchaseListener = null
 	let listenerReady = false
+	let lastPurchaseToken = ''
 
 	function updateResponse(returnValue) {
 		response += `[${new Date().toLocaleTimeString()}] ` + (typeof returnValue === 'string' ? returnValue : JSON.stringify(returnValue, null, 2)) + '\n\n'
@@ -31,6 +33,9 @@
 		try {
 			purchaseListener = await onPurchaseUpdated((purchase) => {
 				console.log('[IAP Demo] Purchase update received:', purchase)
+				if (purchase?.purchaseToken) {
+					lastPurchaseToken = purchase.purchaseToken
+				}
 				updateResponse('🔔 Purchase updated: ' + JSON.stringify(purchase, null, 2))
 			})
 			listenerReady = true
@@ -77,9 +82,25 @@
 		}
 		try {
 			const result = await purchase(selectedProductId, productType)
+			if (result?.purchaseToken) {
+				lastPurchaseToken = result.purchaseToken
+			}
 			updateResponse('✓ Purchase initiated: ' + JSON.stringify(result, null, 2))
 		} catch (error) {
 			updateResponse('✗ Purchase failed: ' + JSON.stringify(error))
+		}
+	}
+
+	async function handleConsumeLastPurchase() {
+		if (!lastPurchaseToken) {
+			updateResponse('✗ No purchase token captured yet — buy something first')
+			return
+		}
+		try {
+			await consumePurchase(lastPurchaseToken)
+			updateResponse('✓ Consumed purchase token: ' + lastPurchaseToken)
+		} catch (error) {
+			updateResponse('✗ Consume failed: ' + JSON.stringify(error))
 		}
 	}
 
@@ -167,9 +188,13 @@
         />
       </label>
       <button on:click={handlePurchase}>Purchase</button>
+      <button on:click={handleConsumeLastPurchase} disabled={!lastPurchaseToken}>
+        Consume Last Purchase
+      </button>
     </div>
     <p class="note"><strong>Android:</strong> For subscriptions, you may need to provide an offer token.</p>
     <p class="note"><strong>iOS:</strong> Optionally provide an appAccountToken (UUID) for user tracking.</p>
+    <p class="note"><strong>Consume:</strong> Call after a consumable purchase (credits, coins) to allow re-purchase.</p>
   </div>
 
   <div class="section">

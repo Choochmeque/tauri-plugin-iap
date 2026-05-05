@@ -1,13 +1,15 @@
 use serde::de::DeserializeOwned;
 use tauri::{AppHandle, Runtime, plugin::PluginApi};
 
-use crate::models::*;
+use crate::models::{
+    GetProductsResponse, ProductStatus, Purchase, PurchaseRequest, RestorePurchasesResponse,
+};
 
 /// Validation checks for macOS IAP functionality.
 ///
-/// StoreKit requires the app to run from a signed .app bundle to communicate
+/// `StoreKit` requires the app to run from a signed `.app` bundle to communicate
 /// with the App Store. During development with `tauri dev`, the binary runs
-/// directly without a bundle, causing StoreKit calls to fail silently or crash.
+/// directly without a bundle, causing `StoreKit` calls to fail silently or crash.
 mod validation {
     /// Ensures the app is running from a .app bundle.
     pub fn require_bundle() -> crate::Result<()> {
@@ -61,7 +63,6 @@ mod ffi {
             offerToken: Option<String>,
         ) -> Result<String, FFIResult>;
         async fn restorePurchases(&self, productType: String) -> Result<String, FFIResult>;
-        async fn acknowledgePurchase(&self, purchaseToken: String) -> Result<String, FFIResult>;
         async fn getProductStatus(
             &self,
             productId: String,
@@ -94,15 +95,21 @@ impl ParseFfiResponse for Result<String, ffi::FFIResult> {
     }
 }
 
+// Signature matches the swift-bridge `extern "Rust"` declaration above, which
+// requires `String` (bridge ABI) — `&str` would change the FFI binding.
 /// Called by Swift via FFI when transaction updates occur.
+#[allow(clippy::needless_pass_by_value)]
 fn trigger(event: String, payload: String) -> Result<(), ffi::FFIResult> {
-    crate::listeners::trigger(&event, payload)
+    crate::listeners::trigger(&event, &payload)
         .map_err(|e| ffi::FFIResult::Err(format!("Failed to trigger event '{event}': {e}")))
 }
 
+// `Result` matches the cross-platform `init` signature (mobile genuinely fails);
+// macOS body is infallible today but the contract is shared.
+#[allow(clippy::unnecessary_wraps)]
 pub fn init<R: Runtime, C: DeserializeOwned>(
     app: &AppHandle<R>,
-    _api: PluginApi<R, C>,
+    _api: &PluginApi<R, C>,
 ) -> crate::Result<Iap<R>> {
     Ok(Iap {
         _app: app.clone(),
@@ -152,16 +159,22 @@ impl<R: Runtime> Iap<R> {
         self.plugin.restorePurchases(product_type).await.parse()
     }
 
-    pub async fn acknowledge_purchase(
-        &self,
-        purchase_token: String,
-    ) -> crate::Result<AcknowledgePurchaseResponse> {
+    /// No-op: macOS finishes transactions inside `purchase()` itself,
+    /// so there is nothing left to acknowledge here.
+    // `async` matches the cross-platform `Iap` contract — `commands.rs` `.await`s
+    // this on every platform, including ones that genuinely yield (Android).
+    #[allow(clippy::unused_async)]
+    pub async fn acknowledge_purchase(&self, _purchase_token: String) -> crate::Result<()> {
         validation::require_bundle()?;
+        Ok(())
+    }
 
-        self.plugin
-            .acknowledgePurchase(purchase_token)
-            .await
-            .parse()
+    /// No-op: macOS finishes transactions inside `purchase()` itself,
+    /// and `StoreKit` auto-allows re-purchase of consumables once finished.
+    #[allow(clippy::unused_async)]
+    pub async fn consume_purchase(&self, _purchase_token: String) -> crate::Result<()> {
+        validation::require_bundle()?;
+        Ok(())
     }
 
     pub async fn get_product_status(

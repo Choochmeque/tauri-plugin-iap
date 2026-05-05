@@ -112,6 +112,7 @@ import {
   purchase,
   restorePurchases,
   acknowledgePurchase,
+  consumePurchase,
   getProductStatus,
   onPurchaseUpdated,
   PurchaseState
@@ -161,8 +162,13 @@ const upgraded = await purchase('premium_subscription', 'subs', {
 // Restore purchases (specify product type)
 const restored = await restorePurchases('subs');
 
-// Acknowledge a purchase (Android only, iOS auto-acknowledges)
+// Acknowledge a non-consumable purchase (subscriptions, durables).
+// No-op on iOS/macOS — StoreKit auto-finishes transactions.
 await acknowledgePurchase(purchaseResult.purchaseToken);
+
+// Consume a consumable purchase (credits, coins) so it can be re-bought.
+// No-op on iOS/macOS — StoreKit auto-allows re-purchase.
+await consumePurchase(purchaseResult.purchaseToken);
 
 // Listen for purchase updates
 const listener = await onPurchaseUpdated((purchase) => {
@@ -276,7 +282,10 @@ Queries and returns all active purchases.
 Returns the complete purchase history.
 
 ### `acknowledgePurchase(purchaseToken: string)`
-Acknowledges a purchase (required on Android within 3 days, no-op on iOS).
+Acknowledges a non-consumable purchase (subscriptions, durables). On Android this is required within 3 days or Google auto-refunds the purchase. No-op on iOS, macOS, and Windows. Use `consumePurchase` instead for consumables.
+
+### `consumePurchase(purchaseToken: string)`
+Consumes a consumable purchase (credits, coins, gems) so it can be purchased again. On Android calls `BillingClient.consumeAsync()`; on Windows calls `StoreContext.ReportConsumableFulfillmentAsync` with quantity 1. No-op on iOS and macOS — StoreKit auto-allows re-purchase. Never call both `acknowledgePurchase` and `consumePurchase` for the same purchase token.
 
 ### `getProductStatus(productId: string, productType: 'subs' | 'inapp' = 'subs')`
 Checks the ownership and subscription status of a specific product.

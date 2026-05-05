@@ -42,28 +42,6 @@ final class PluginTests: XCTestCase {
         XCTAssertNil(PurchaseStateValue(rawValue: 99))
     }
 
-    // MARK: - AcknowledgePurchase Tests
-
-    func testAcknowledgePurchase() async throws {
-        let jsonString = try await plugin.acknowledgePurchase(purchaseToken: RustString("test_token"))
-        let json = try XCTUnwrap(parseJSON(jsonString))
-        XCTAssertEqual(json["success"] as? Bool, true)
-    }
-
-    func testAcknowledgePurchaseWithEmptyToken() async throws {
-        _ = try await plugin.acknowledgePurchase(purchaseToken: RustString(""))
-    }
-
-    func testAcknowledgePurchaseWithLongToken() async throws {
-        let longToken = String(repeating: "token_", count: 100)
-        _ = try await plugin.acknowledgePurchase(purchaseToken: RustString(longToken))
-    }
-
-    func testAcknowledgePurchaseReturnsValidJSON() async throws {
-        let jsonString = try await plugin.acknowledgePurchase(purchaseToken: RustString("any_token"))
-        let json = try XCTUnwrap(parseJSON(jsonString))
-        XCTAssertTrue(json.keys.contains("success"))
-    }
 }
 
 // MARK: - StoreKit Integration Tests

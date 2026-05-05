@@ -25,6 +25,10 @@ class AcknowledgePurchaseArgs: Decodable {
     let purchaseToken: String
 }
 
+class ConsumePurchaseArgs: Decodable {
+    let purchaseToken: String
+}
+
 class GetProductStatusArgs: Decodable {
     let productId: String
     let productType: String?
@@ -257,11 +261,22 @@ class IapPlugin: Plugin {
         }
     }
     
+    /// No-op: `purchase()` already calls `transaction.finish()` after verification.
+    /// Args are still parsed so a missing/invalid `purchaseToken` rejects here too,
+    /// matching Android/Windows behavior.
     @objc public func acknowledgePurchase(_ invoke: Invoke) throws {
-        // iOS automatically acknowledges purchases, so this is a no-op
-        invoke.resolve(["success": true])
+        _ = try invoke.parseArgs(AcknowledgePurchaseArgs.self)
+        invoke.resolve()
     }
-    
+
+    /// No-op: StoreKit auto-allows re-purchase of consumables once the transaction
+    /// has been finished, which `purchase()` already does. Args are still parsed
+    /// for cross-platform consistency.
+    @objc public func consumePurchase(_ invoke: Invoke) throws {
+        _ = try invoke.parseArgs(ConsumePurchaseArgs.self)
+        invoke.resolve()
+    }
+
     @objc public func getProductStatus(_ invoke: Invoke) async throws {
         let args = try invoke.parseArgs(GetProductStatusArgs.self)
 
