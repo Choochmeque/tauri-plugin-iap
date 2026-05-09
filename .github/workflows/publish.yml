@@ -42,7 +42,7 @@ jobs:
         run: npm install -g npm@latest
 
       # Install dependencies
-      - run: pnpm install
+      - run: pnpm install --frozen-lockfile
 
       # Ensure the tag matches package.json version
       - name: Verify version matches tag
