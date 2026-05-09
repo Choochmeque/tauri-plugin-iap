@@ -19,6 +19,7 @@ export default {
   ],
   plugins: [
     typescript({
+      rootDir: "guest-js",
       declaration: true,
       declarationDir: dirname(pkg.exports.import),
     }),
