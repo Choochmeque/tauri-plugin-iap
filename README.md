@@ -179,6 +179,49 @@ const listener = await onPurchaseUpdated((purchase) => {
 await listener.unregister();
 ```
 
+### Rust
+
+```rust
+use tauri_plugin_iap::{IapExt, PurchaseRequest, PurchaseStateValue, Result};
+
+
+// Get available products
+let products = app.iap()
+    .get_products(
+        vec!["subscription_id_1".into(), "subscription_id_2".into()],
+        "subs".into(),
+    )
+    .await?;
+
+// Check if user owns a specific product
+let status = app.iap()
+    .get_product_status("subscription_id_1".into(), "subs".into())
+    .await?;
+if status.is_owned && status.purchase_state == Some(PurchaseStateValue::Purchased) {
+    println!("User has active subscription");
+    if status.is_auto_renewing == Some(true) {
+        println!("Subscription will auto-renew");
+    }
+}
+
+// Purchase a subscription or in-app product
+// Simple purchase (will use first available offer on Android if not specified)
+let purchase_result = app.iap()
+    .purchase(PurchaseRequest {
+        product_id: "subscription_id_1".into(),
+        product_type: "subs".into(),
+        options: None,
+    })
+    .await?;
+
+// Restore purchases (specify product type)
+let restored = app.iap().restore_purchases("subs".into()).await?;
+
+// Acknowledge a non-consumable purchase (subscriptions, durables).
+// No-op on iOS/macOS — StoreKit auto-finishes transactions.
+app.iap().acknowledge_purchase(purchase_result.purchase_token).await?;
+```
+
 ## Platform Setup
 
 ### iOS Setup
