@@ -52,7 +52,7 @@
     "@vitest/ui": "^4.0.13",
     "happy-dom": "^20.0.10",
     "prettier": "3.8.3",
-    "rollup": "^4.9.6",
+    "rollup": "^4.60.3",
     "tslib": "^2.6.2",
     "typescript": "^6.0.2",
     "vitest": "^4.0.13"
