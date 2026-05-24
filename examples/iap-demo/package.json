@@ -18,7 +18,7 @@
     "@choochmeque/tauri-macos-xcode": "^0.2.24",
     "@sveltejs/vite-plugin-svelte": "^7.1.2",
     "@tauri-apps/cli": "^2.11.1",
-    "svelte": "^5.55.7",
+    "svelte": "^5.55.9",
     "vite": "^8.0.11"
   }
 }
