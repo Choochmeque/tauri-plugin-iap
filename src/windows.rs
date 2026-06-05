@@ -151,22 +151,40 @@ impl<R: Runtime> Iap<R> {
         let _ = self.app_handle.emit(event, payload);
     }
 
-    #[allow(clippy::unused_async)]
-    pub async fn get_products(
-        &self,
-        product_ids: Vec<String>,
-        product_type: String,
-    ) -> crate::Result<GetProductsResponse> {
+    /// Developer-defined product id exposed by Microsoft Store as `InAppOfferToken`.
+    /// This is the identifier callers see across all platforms — Microsoft-generated
+    /// `StoreId` and `SkuStoreId` values stay internal to this module.
+    fn app_product_id(store_product: &StoreProduct) -> crate::Result<String> {
+        let product_id = store_product.InAppOfferToken()?.to_string();
+        if product_id.trim().is_empty() {
+            return Err(crate::Error::PluginInvoke(
+                PluginInvokeError::InvokeRejected(ErrorResponse {
+                    code: Some("missingProductId".to_string()),
+                    message: Some("Windows Store product is missing InAppOfferToken".to_string()),
+                    data: (),
+                }),
+            ));
+        }
+        Ok(product_id)
+    }
+
+    /// Convert a SKU StoreId like `9NXXXX/000N` back to the product StoreId.
+    fn store_id_from_sku_store_id(sku_store_id: &str) -> String {
+        sku_store_id
+            .split('/')
+            .next()
+            .filter(|s| !s.is_empty())
+            .unwrap_or(sku_store_id)
+            .to_string()
+    }
+
+    /// Query all add-ons associated with this app. We cannot use
+    /// `GetStoreProductsAsync` with developer product ids because Microsoft
+    /// expects Microsoft-generated StoreIds there.
+    fn query_associated_products(&self, product_type: &str) -> crate::Result<Vec<StoreProduct>> {
         let context = self.get_store_context()?;
 
-        // Convert product IDs to HSTRING
-        let store_ids: Vec<HSTRING> = product_ids
-            .iter()
-            .map(|id| HSTRING::from(id.as_str()))
-            .collect();
-
-        // Determine product kinds based on type
-        let product_kinds: Vec<HSTRING> = match product_type.as_str() {
+        let product_kinds: Vec<HSTRING> = match product_type {
             "inapp" => vec![
                 HSTRING::from("Consumable"),
                 HSTRING::from("UnmanagedConsumable"),
@@ -179,16 +197,12 @@ impl<R: Runtime> Iap<R> {
                 HSTRING::from("Subscription"),
             ],
         };
-
-        let store_ids: IIterable<HSTRING> = store_ids.into();
         let product_kinds: IIterable<HSTRING> = product_kinds.into();
 
-        // Query products from the store
         let query_result = context
-            .GetStoreProductsAsync(&product_kinds, &store_ids)
+            .GetAssociatedStoreProductsAsync(&product_kinds)
             .and_then(|async_op| async_op.get())?;
 
-        // Check for any errors
         let extended_error = query_result.ExtendedError()?;
         if extended_error.is_err() {
             return Err(crate::Error::PluginInvoke(
@@ -205,11 +219,30 @@ impl<R: Runtime> Iap<R> {
 
         let products_map = query_result.Products()?;
         let mut products = Vec::new();
-
         for kv in products_map {
-            let store_product = kv.Value()?;
+            products.push(kv.Value()?);
+        }
+        Ok(products)
+    }
+
+    #[allow(clippy::unused_async)]
+    pub async fn get_products(
+        &self,
+        product_ids: Vec<String>,
+        product_type: String,
+    ) -> crate::Result<GetProductsResponse> {
+        let store_products = self.query_associated_products(&product_type)?;
+        let mut products = Vec::new();
+
+        for requested_id in product_ids {
+            let Some(store_product) = store_products
+                .iter()
+                .find(|sp| Self::app_product_id(sp).is_ok_and(|id| id == requested_id))
+            else {
+                continue;
+            };
             products.push(Self::convert_store_product_to_product(
-                &store_product,
+                store_product,
                 &product_type,
             )?);
         }
@@ -221,7 +254,7 @@ impl<R: Runtime> Iap<R> {
         store_product: &StoreProduct,
         product_type: &str,
     ) -> crate::Result<Product> {
-        let product_id = store_product.StoreId()?.to_string();
+        let product_id = Self::app_product_id(store_product)?;
 
         let title = store_product.Title()?.to_string();
 
@@ -326,54 +359,43 @@ impl<R: Runtime> Iap<R> {
         })
     }
 
-    #[allow(clippy::too_many_lines)]
     pub async fn purchase(&self, payload: PurchaseRequest) -> crate::Result<Purchase> {
         let context = self.get_store_context()?;
 
-        // Get the product first to ensure it exists
-        let products_response = self
-            .get_products(
-                vec![payload.product_id.clone()],
-                payload.product_type.clone(),
-            )
-            .await?;
-
-        if products_response.products.is_empty() {
-            return Err(crate::Error::PluginInvoke(
-                PluginInvokeError::InvokeRejected(ErrorResponse {
+        // Resolve the developer product id to the matching Windows StoreProduct.
+        let store_products = self.query_associated_products(&payload.product_type)?;
+        let store_product = store_products
+            .into_iter()
+            .find(|sp| Self::app_product_id(sp).is_ok_and(|id| id == payload.product_id))
+            .ok_or_else(|| {
+                crate::Error::PluginInvoke(PluginInvokeError::InvokeRejected(ErrorResponse {
                     code: Some("productNotFound".to_string()),
-                    message: Some("Product not found".to_string()),
+                    message: Some(format!("Product not found: {}", payload.product_id)),
                     data: (),
-                }),
-            ));
-        }
+                }))
+            })?;
+        let product = Self::convert_store_product_to_product(&store_product, &payload.product_type)?;
+        let store_id = store_product.StoreId()?.to_string();
 
-        let product = &products_response.products[0];
-        let product_title = product.title.clone();
-
-        let store_id = HSTRING::from(&payload.product_id);
-
-        // Create purchase properties if we have an offer token (for subscriptions)
+        // Create purchase properties if we have an offer token (for subscriptions).
+        // The offer_token is a SKU StoreId (e.g. `9NXXXX/000N`) which targets a specific SKU.
         let offer_token = payload.options.and_then(|opts| opts.offer_token);
         let purchase_result = if let Some(token) = offer_token {
-            let properties = StorePurchaseProperties::Create(&HSTRING::from(&payload.product_id))?;
-
-            // Set the SKU ID for subscription offers
+            let properties = StorePurchaseProperties::Create(&HSTRING::from(store_id.as_str()))?;
             properties.SetExtendedJsonData(&HSTRING::from(format!(r#"{{"skuId":"{token}"}}"#)))?;
-
             context
-                .RequestPurchaseWithPurchasePropertiesAsync(&store_id, &properties)
+                .RequestPurchaseWithPurchasePropertiesAsync(
+                    &HSTRING::from(store_id.as_str()),
+                    &properties,
+                )
                 .and_then(|async_op| async_op.get())?
         } else {
-            // Simple purchase without properties
             context
-                .RequestPurchaseAsync(&store_id)
+                .RequestPurchaseAsync(&HSTRING::from(store_id.as_str()))
                 .and_then(|async_op| async_op.get())?
         };
 
-        // Check purchase status
         let status = purchase_result.Status()?;
-
         let purchase_state = match status {
             StorePurchaseStatus::Succeeded | StorePurchaseStatus::AlreadyPurchased => {
                 PurchaseStateValue::Purchased
@@ -422,29 +444,11 @@ impl<R: Runtime> Iap<R> {
             .ok()
             .map_or_else(String::new, windows::core::HRESULT::message);
 
-        // Generate purchase details
-        let purchase_time_ms = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .map_err(|e| {
-                crate::Error::PluginInvoke(PluginInvokeError::InvokeRejected(ErrorResponse {
-                    code: Some("systemTimeError".to_string()),
-                    message: Some(format!("Failed to get system time: {e:?}")),
-                    data: (),
-                }))
-            })?
-            .as_millis();
-        let purchase_time = i64::try_from(purchase_time_ms).map_err(|e| {
-            crate::Error::PluginInvoke(PluginInvokeError::InvokeRejected(ErrorResponse {
-                code: Some("systemTimeError".to_string()),
-                message: Some(format!("System time out of i64 range: {e}")),
-                data: (),
-            }))
-        })?;
-
+        let purchase_time = FileTime::now().to_unix_time_millis();
         let tracking_id = windows::core::GUID::new()?.to_string();
         let purchase_token = WindowsPurchaseTokenV1 {
             v: 1,
-            store_id: product.product_id.clone(),
+            store_id,
             purchase_time,
             tracking_id,
         }
@@ -452,7 +456,7 @@ impl<R: Runtime> Iap<R> {
 
         let purchase = Purchase {
             order_id: Some(purchase_token.clone()),
-            package_name: product_title,
+            package_name: product.title.clone(),
             product_id: product.product_id.clone(),
             purchase_time,
             purchase_token,
@@ -468,9 +472,7 @@ impl<R: Runtime> Iap<R> {
             jws_representation: None, // Windows doesn't have JWS like iOS/macOS
         };
 
-        // Emit event for purchase state change
         self.trigger("purchaseUpdated", purchase.clone());
-
         Ok(purchase)
     }
 
@@ -509,36 +511,28 @@ impl<R: Runtime> Iap<R> {
         product_type: &str,
     ) -> crate::Result<Purchase> {
         let product_id = license.InAppOfferToken()?.to_string();
-
         let sku_store_id = license.SkuStoreId()?.to_string();
-
+        // ReportConsumableFulfillmentAsync needs the product StoreId, which is
+        // the prefix of the SKU StoreId returned by the license.
+        let store_id = Self::store_id_from_sku_store_id(&sku_store_id);
         let is_active = license.IsActive()?;
-
-        let expiration_date = license.ExpirationDate()?;
-        let expiration_millis = Self::datetime_to_unix_millis(expiration_date);
+        let expiration_millis = Self::datetime_to_unix_millis(license.ExpirationDate()?);
 
         // Estimate purchase time (30 days before expiration for monthly subs)
         let purchase_time = if product_type == "subs" && expiration_millis > 0 {
             expiration_millis - (30 * 24 * 60 * 60 * 1000)
         } else {
-            let now_ms = std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .map_err(|e| {
-                    crate::Error::PluginInvoke(PluginInvokeError::InvokeRejected(ErrorResponse {
-                        code: Some("systemTimeError".to_string()),
-                        message: Some(format!("Failed to get system time: {e:?}")),
-                        data: (),
-                    }))
-                })?
-                .as_millis();
-            i64::try_from(now_ms).map_err(|e| {
-                crate::Error::PluginInvoke(PluginInvokeError::InvokeRejected(ErrorResponse {
-                    code: Some("systemTimeError".to_string()),
-                    message: Some(format!("System time out of i64 range: {e}")),
-                    data: (),
-                }))
-            })?
+            FileTime::now().to_unix_time_millis()
         };
+
+        let tracking_id = windows::core::GUID::new()?.to_string();
+        let purchase_token = WindowsPurchaseTokenV1 {
+            v: 1,
+            store_id,
+            purchase_time,
+            tracking_id,
+        }
+        .encode()?;
 
         let purchase_state = if is_active {
             PurchaseStateValue::Purchased
@@ -547,11 +541,11 @@ impl<R: Runtime> Iap<R> {
         };
 
         Ok(Purchase {
-            order_id: Some(sku_store_id.clone()),
+            order_id: Some(purchase_token.clone()),
             package_name: self.app_handle.package_info().name.clone(),
             product_id,
             purchase_time,
-            purchase_token: sku_store_id,
+            purchase_token,
             purchase_state,
             is_auto_renewing: product_type == "subs" && is_active,
             is_acknowledged: true,
@@ -630,16 +624,19 @@ impl<R: Runtime> Iap<R> {
 
         let addon_licenses = app_license.AddOnLicenses()?;
 
-        // Look for the specific product license
-        let product_key = HSTRING::from(&product_id);
-        let has_license = addon_licenses.HasKey(&product_key)?;
-
-        if has_license {
-            let license = addon_licenses.Lookup(&product_key)?;
+        // AddOnLicenses is keyed by SKU StoreId, not by developer product id,
+        // so we cannot use HasKey/Lookup with the requested product_id.
+        // Iterate instead and match on InAppOfferToken.
+        for kv in addon_licenses {
+            let license = kv.Value()?;
+            if license.InAppOfferToken()?.to_string() != product_id {
+                continue;
+            }
 
             let is_active = license.IsActive()?;
-            let expiration_date = license.ExpirationDate()?;
-            let expiration_time = Self::datetime_to_unix_millis(expiration_date);
+            let expiration_time = Self::datetime_to_unix_millis(license.ExpirationDate()?);
+            let sku_store_id = license.SkuStoreId()?.to_string();
+            let store_id = Self::store_id_from_sku_store_id(&sku_store_id);
 
             let purchase_time = if product_type == "subs" && expiration_time > 0 {
                 expiration_time - (30 * 24 * 60 * 60 * 1000)
@@ -647,15 +644,22 @@ impl<R: Runtime> Iap<R> {
                 expiration_time
             };
 
+            let tracking_id = windows::core::GUID::new()?.to_string();
+            let purchase_token = WindowsPurchaseTokenV1 {
+                v: 1,
+                store_id,
+                purchase_time,
+                tracking_id,
+            }
+            .encode()?;
+
             let purchase_state = if is_active {
                 Some(PurchaseStateValue::Purchased)
             } else {
                 Some(PurchaseStateValue::Canceled)
             };
 
-            let sku_store_id = license.SkuStoreId()?.to_string();
-
-            Ok(ProductStatus {
+            return Ok(ProductStatus {
                 product_id,
                 is_owned: is_active,
                 purchase_state,
@@ -667,20 +671,20 @@ impl<R: Runtime> Iap<R> {
                 },
                 is_auto_renewing: Some(product_type == "subs" && is_active),
                 is_acknowledged: Some(true),
-                purchase_token: Some(sku_store_id),
-            })
-        } else {
-            Ok(ProductStatus {
-                product_id,
-                is_owned: false,
-                purchase_state: None,
-                purchase_time: None,
-                expiration_time: None,
-                is_auto_renewing: None,
-                is_acknowledged: None,
-                purchase_token: None,
-            })
+                purchase_token: Some(purchase_token),
+            });
         }
+
+        Ok(ProductStatus {
+            product_id,
+            is_owned: false,
+            purchase_state: None,
+            purchase_time: None,
+            expiration_time: None,
+            is_auto_renewing: None,
+            is_acknowledged: None,
+            purchase_token: None,
+        })
     }
 }
 
