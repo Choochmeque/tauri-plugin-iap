@@ -26,15 +26,18 @@ use std::sync::{Arc, RwLock};
 
 /// Microsoft Store has no native per-transaction token, but our cross-platform API
 /// exposes `purchase_token: String` for every purchase. We synthesize one by encoding
-/// the data needed to consume the purchase later (`product_id` for
-/// `ReportConsumableFulfillmentAsync`) into a versioned base64-JSON envelope.
+/// the data needed to consume the purchase later (the Microsoft `StoreId`, required
+/// by `ReportConsumableFulfillmentAsync`) into a versioned base64-JSON envelope.
 /// The token is opaque to the developer; only `consume_purchase()` decodes it.
+///
+/// `tracking_id` is a fresh GUID per token, giving every emitted purchase a unique
+/// identifier even when two are generated within the same millisecond.
 #[derive(Serialize, Deserialize)]
 struct WindowsPurchaseTokenV1 {
     v: u8,
-    product_id: String,
+    store_id: String,
     purchase_time: i64,
-    nonce: u32,
+    tracking_id: String,
 }
 
 impl WindowsPurchaseTokenV1 {
@@ -59,7 +62,7 @@ impl WindowsPurchaseTokenV1 {
         };
         let bytes = URL_SAFE_NO_PAD.decode(s).map_err(|_| invalid())?;
         let env: Self = serde_json::from_slice(&bytes).map_err(|_| invalid())?;
-        if env.v != 1 {
+        if env.v != 1 || env.store_id.trim().is_empty() || env.tracking_id.trim().is_empty() {
             return Err(invalid());
         }
         Ok(env)
@@ -442,15 +445,12 @@ impl<R: Runtime> Iap<R> {
             }))
         })?;
 
-        // Sub-millisecond entropy so two purchases in the same `purchase_time` ms still differ.
-        let nonce = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .map_or(0, |d| d.subsec_nanos());
+        let tracking_id = windows::core::GUID::new()?.to_string();
         let purchase_token = WindowsPurchaseTokenV1 {
             v: 1,
-            product_id: product.product_id.clone(),
+            store_id: product.product_id.clone(),
             purchase_time,
-            nonce,
+            tracking_id,
         }
         .encode()?;
 
@@ -583,7 +583,7 @@ impl<R: Runtime> Iap<R> {
     pub async fn consume_purchase(&self, purchase_token: String) -> crate::Result<()> {
         let envelope = WindowsPurchaseTokenV1::decode(&purchase_token)?;
         let context = self.get_store_context()?;
-        let store_id = HSTRING::from(&envelope.product_id);
+        let store_id = HSTRING::from(&envelope.store_id);
         let tracking_id = windows::core::GUID::new()?;
 
         let result = context
@@ -776,20 +776,22 @@ mod tests {
         assert!(result > 4_000_000_000_000);
     }
 
-    fn sample_envelope(product_id: &str) -> WindowsPurchaseTokenV1 {
+    const SAMPLE_TRACKING_ID: &str = "00000000-0000-0000-0000-00000000002a";
+
+    fn sample_envelope(store_id: &str) -> WindowsPurchaseTokenV1 {
         WindowsPurchaseTokenV1 {
             v: 1,
-            product_id: product_id.to_string(),
+            store_id: store_id.to_string(),
             purchase_time: 1_714_387_200_000,
-            nonce: 42,
+            tracking_id: SAMPLE_TRACKING_ID.to_string(),
         }
     }
 
     fn assert_envelope_eq(a: &WindowsPurchaseTokenV1, b: &WindowsPurchaseTokenV1) {
         assert_eq!(a.v, b.v);
-        assert_eq!(a.product_id, b.product_id);
+        assert_eq!(a.store_id, b.store_id);
         assert_eq!(a.purchase_time, b.purchase_time);
-        assert_eq!(a.nonce, b.nonce);
+        assert_eq!(a.tracking_id, b.tracking_id);
     }
 
     #[test]
@@ -802,16 +804,13 @@ mod tests {
     }
 
     #[test]
-    fn test_envelope_round_trip_empty_product_id() {
-        let original = sample_envelope("");
-        let encoded = original.encode().expect("encode must succeed");
-        let decoded =
-            WindowsPurchaseTokenV1::decode(&encoded).expect("just-encoded token must decode");
-        assert_envelope_eq(&original, &decoded);
+    fn test_envelope_decode_rejects_empty_store_id() {
+        let encoded = sample_envelope("").encode().expect("encode must succeed");
+        assert!(WindowsPurchaseTokenV1::decode(&encoded).is_err());
     }
 
     #[test]
-    fn test_envelope_round_trip_long_product_id() {
+    fn test_envelope_round_trip_long_store_id() {
         let original = sample_envelope(&"x".repeat(512));
         let encoded = original.encode().expect("encode must succeed");
         let decoded =
@@ -856,9 +855,9 @@ mod tests {
     fn test_envelope_decode_rejects_unknown_version() {
         let bytes = serde_json::to_vec(&serde_json::json!({
             "v": 99,
-            "product_id": "9MSPC6MP8FM4",
+            "store_id": "9MSPC6MP8FM4",
             "purchase_time": 1_714_387_200_000_i64,
-            "nonce": 42,
+            "tracking_id": SAMPLE_TRACKING_ID,
         }))
         .expect("static JSON must serialize");
         let encoded = URL_SAFE_NO_PAD.encode(&bytes);
@@ -866,11 +865,36 @@ mod tests {
     }
 
     #[test]
-    fn test_envelope_decode_rejects_missing_product_id() {
+    fn test_envelope_decode_rejects_missing_store_id() {
         let bytes = serde_json::to_vec(&serde_json::json!({
             "v": 1,
             "purchase_time": 1_714_387_200_000_i64,
-            "nonce": 42,
+            "tracking_id": SAMPLE_TRACKING_ID,
+        }))
+        .expect("static JSON must serialize");
+        let encoded = URL_SAFE_NO_PAD.encode(&bytes);
+        assert!(WindowsPurchaseTokenV1::decode(&encoded).is_err());
+    }
+
+    #[test]
+    fn test_envelope_decode_rejects_missing_tracking_id() {
+        let bytes = serde_json::to_vec(&serde_json::json!({
+            "v": 1,
+            "store_id": "9MSPC6MP8FM4",
+            "purchase_time": 1_714_387_200_000_i64,
+        }))
+        .expect("static JSON must serialize");
+        let encoded = URL_SAFE_NO_PAD.encode(&bytes);
+        assert!(WindowsPurchaseTokenV1::decode(&encoded).is_err());
+    }
+
+    #[test]
+    fn test_envelope_decode_rejects_empty_tracking_id() {
+        let bytes = serde_json::to_vec(&serde_json::json!({
+            "v": 1,
+            "store_id": "9MSPC6MP8FM4",
+            "purchase_time": 1_714_387_200_000_i64,
+            "tracking_id": "",
         }))
         .expect("static JSON must serialize");
         let encoded = URL_SAFE_NO_PAD.encode(&bytes);
