@@ -206,16 +206,12 @@ impl<R: Runtime> Iap<R> {
         let products_map = query_result.Products()?;
         let mut products = Vec::new();
 
-        // Iterate through the products
-        let iterator = products_map.First()?;
-        while iterator.HasCurrent()? {
-            let item = iterator.Current()?;
-            let store_product = item.Value()?;
-
-            let product = Self::convert_store_product_to_product(&store_product, &product_type)?;
-            products.push(product);
-
-            iterator.MoveNext()?;
+        for kv in products_map {
+            let store_product = kv.Value()?;
+            products.push(Self::convert_store_product_to_product(
+                &store_product,
+                &product_type,
+            )?);
         }
 
         Ok(GetProductsResponse { products })
@@ -495,18 +491,13 @@ impl<R: Runtime> Iap<R> {
         // Get add-on licenses (in-app purchases)
         let addon_licenses = app_license.AddOnLicenses()?;
 
-        let iterator = addon_licenses.First()?;
-        while iterator.HasCurrent()? {
-            let item = iterator.Current()?;
-            let license = item.Value()?;
-
+        for kv in addon_licenses {
+            let license = kv.Value()?;
             let purchase = self.convert_license_to_purchase(&license, &product_type)?;
 
             if purchase.purchase_state == PurchaseStateValue::Purchased {
                 purchases.push(purchase);
             }
-
-            iterator.MoveNext()?;
         }
 
         Ok(RestorePurchasesResponse { purchases })
