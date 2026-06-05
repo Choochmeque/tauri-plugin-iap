@@ -162,12 +162,12 @@ impl<R: Runtime> Iap<R> {
         Ok(product_id)
     }
 
-    /// Extract the product StoreId from a SKU StoreId.
+    /// Extract the product `StoreId` from a SKU `StoreId`.
     ///
-    /// Microsoft formats SKU StoreIds as `<product StoreId>/<SKU>`, with the
+    /// Microsoft formats SKU `StoreIds` as `<product StoreId>/<SKU>`, with the
     /// product part being 12 alpha-numeric characters and the SKU 4 — e.g.
     /// `9NBLGGH69M0B/000N`. `ReportConsumableFulfillmentAsync` expects just
-    /// the product StoreId.
+    /// the product `StoreId`.
     fn store_id_from_sku_store_id(sku_store_id: &str) -> &str {
         sku_store_id
             .split_once('/')
@@ -176,7 +176,7 @@ impl<R: Runtime> Iap<R> {
 
     /// Query all add-ons associated with this app. We cannot use
     /// `GetStoreProductsAsync` with developer product ids because Microsoft
-    /// expects Microsoft-generated StoreIds there.
+    /// expects Microsoft-generated `StoreIds` there.
     fn query_associated_products(&self, product_type: &str) -> crate::Result<Vec<StoreProduct>> {
         let context = self.get_store_context()?;
 
@@ -350,6 +350,7 @@ impl<R: Runtime> Iap<R> {
         })
     }
 
+    #[allow(clippy::unused_async)]
     pub async fn purchase(&self, payload: PurchaseRequest) -> crate::Result<Purchase> {
         let context = self.get_store_context()?;
 
@@ -564,7 +565,7 @@ impl<R: Runtime> Iap<R> {
         // Iterate instead and match on InAppOfferToken.
         for kv in addon_licenses {
             let license = kv.Value()?;
-            if license.InAppOfferToken()?.to_string() != product_id {
+            if license.InAppOfferToken()? != product_id {
                 continue;
             }
 
