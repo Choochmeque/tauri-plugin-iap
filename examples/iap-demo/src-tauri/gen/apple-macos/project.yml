@@ -12,7 +12,7 @@ settingGroups:
   app:
     base:
       PRODUCT_NAME: iap-demo
-      PRODUCT_BUNDLE_IDENTIFIER: com.tauri.dev
+      PRODUCT_BUNDLE_IDENTIFIER: com.test.app
 targets:
   iap-demo_macOS:
     type: application

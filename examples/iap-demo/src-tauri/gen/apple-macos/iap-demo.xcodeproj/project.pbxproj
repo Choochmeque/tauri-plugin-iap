@@ -273,7 +273,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MARKETING_VERSION = 0.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.tauri.dev;
+				PRODUCT_BUNDLE_IDENTIFIER = com.test.app;
 				PRODUCT_NAME = "iap-demo";
 				SDKROOT = macosx;
 				VALID_ARCHS = "arm64 x86_64";
@@ -298,7 +298,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MARKETING_VERSION = 0.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.tauri.dev;
+				PRODUCT_BUNDLE_IDENTIFIER = com.test.app;
 				PRODUCT_NAME = "iap-demo";
 				SDKROOT = macosx;
 				VALID_ARCHS = "arm64 x86_64";
