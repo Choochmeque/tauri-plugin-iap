@@ -1,5 +1,6 @@
 use base64::Engine;
 use base64::engine::general_purpose::URL_SAFE_NO_PAD;
+use nt_time::FileTime;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use tauri::Emitter;
@@ -133,17 +134,13 @@ impl<R: Runtime> Iap<R> {
             .clone())
     }
 
-    /// Convert Windows `DateTime` to Unix timestamp in milliseconds
-    const fn datetime_to_unix_millis(datetime: DateTime) -> i64 {
-        // Windows DateTime is in 100-nanosecond intervals since January 1, 1601
-        // Convert to Unix timestamp (milliseconds since January 1, 1970)
-        const WINDOWS_TICK: i64 = 10_000_000;
-        const SEC_TO_UNIX_EPOCH: i64 = 11_644_473_600;
-
-        let windows_ticks = datetime.UniversalTime;
-        let seconds_since_1601 = windows_ticks / WINDOWS_TICK;
-        let unix_seconds = seconds_since_1601 - SEC_TO_UNIX_EPOCH;
-        unix_seconds * 1000 // Convert to milliseconds
+    /// Convert Windows `DateTime` to Unix timestamp in milliseconds.
+    ///
+    /// `Foundation::DateTime::UniversalTime` and Windows `FILETIME` share the
+    /// same representation (100-nanosecond ticks since 1601-01-01 UTC).
+    #[allow(clippy::cast_sign_loss)]
+    fn datetime_to_unix_millis(datetime: DateTime) -> i64 {
+        FileTime::new(datetime.UniversalTime as u64).to_unix_time_millis()
     }
 
     /// Emit an event to the frontend (equivalent to `iOS`/Android `trigger` method).
@@ -749,14 +746,12 @@ mod tests {
 
     #[test]
     fn test_datetime_to_unix_millis_precision() {
-        // Test that sub-second precision is handled correctly (truncated to seconds then converted to ms)
-        // The function converts to seconds first, losing sub-second precision
+        // Sub-second precision is preserved down to milliseconds.
         let datetime = DateTime {
             UniversalTime: 116_444_736_000_000_000 + 5_000_000, // epoch + 500ms in 100-ns ticks
         };
         let result = Iap::<tauri::Wry>::datetime_to_unix_millis(datetime);
-        // Since we divide by WINDOWS_TICK (10_000_000), we truncate sub-second values
-        assert_eq!(result, 0);
+        assert_eq!(result, 500);
     }
 
     #[test]
