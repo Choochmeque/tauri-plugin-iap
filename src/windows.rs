@@ -50,11 +50,12 @@ struct WindowsPurchaseTokenV1 {
 
 impl WindowsPurchaseTokenV1 {
     fn new(store_id: String, purchase_time: i64) -> crate::Result<Self> {
+        let tracking_id = format!("{:032x}", windows::core::GUID::new()?.to_u128());
         Ok(Self {
             v: 1,
             store_id,
             purchase_time,
-            tracking_id: windows::core::GUID::new()?.to_string(),
+            tracking_id,
         })
     }
 
@@ -161,14 +162,16 @@ impl<R: Runtime> Iap<R> {
         Ok(product_id)
     }
 
-    /// Convert a SKU StoreId like `9NXXXX/000N` back to the product StoreId.
-    fn store_id_from_sku_store_id(sku_store_id: &str) -> String {
+    /// Extract the product StoreId from a SKU StoreId.
+    ///
+    /// Microsoft formats SKU StoreIds as `<product StoreId>/<SKU>`, with the
+    /// product part being 12 alpha-numeric characters and the SKU 4 — e.g.
+    /// `9NBLGGH69M0B/000N`. `ReportConsumableFulfillmentAsync` expects just
+    /// the product StoreId.
+    fn store_id_from_sku_store_id(sku_store_id: &str) -> &str {
         sku_store_id
-            .split('/')
-            .next()
-            .filter(|s| !s.is_empty())
-            .unwrap_or(sku_store_id)
-            .to_string()
+            .split_once('/')
+            .map_or(sku_store_id, |(prefix, _)| prefix)
     }
 
     /// Query all add-ons associated with this app. We cannot use
@@ -471,7 +474,7 @@ impl<R: Runtime> Iap<R> {
         let sku_store_id = license.SkuStoreId()?.to_string();
         // ReportConsumableFulfillmentAsync needs the product StoreId, which is
         // the prefix of the SKU StoreId returned by the license.
-        let store_id = Self::store_id_from_sku_store_id(&sku_store_id);
+        let store_id = Self::store_id_from_sku_store_id(&sku_store_id).to_string();
         let is_active = license.IsActive()?;
         let expiration_millis = Self::datetime_to_unix_millis(license.ExpirationDate()?);
 
@@ -568,7 +571,7 @@ impl<R: Runtime> Iap<R> {
             let is_active = license.IsActive()?;
             let expiration_time = Self::datetime_to_unix_millis(license.ExpirationDate()?);
             let sku_store_id = license.SkuStoreId()?.to_string();
-            let store_id = Self::store_id_from_sku_store_id(&sku_store_id);
+            let store_id = Self::store_id_from_sku_store_id(&sku_store_id).to_string();
 
             let purchase_time = if product_type == "subs" && expiration_time > 0 {
                 expiration_time - (30 * 24 * 60 * 60 * 1000)
@@ -834,12 +837,9 @@ mod tests {
     }
 
     #[test]
-    fn test_store_id_from_sku_store_id_empty_prefix_falls_back() {
-        // When the prefix is empty (e.g. leading slash), return the original
-        // rather than an empty string.
-        assert_eq!(
-            Iap::<tauri::Wry>::store_id_from_sku_store_id("/000N"),
-            "/000N"
-        );
+    fn test_store_id_from_sku_store_id_leading_slash_returns_empty() {
+        // Malformed input with no product prefix returns the empty prefix
+        // rather than silently masking the bad data.
+        assert_eq!(Iap::<tauri::Wry>::store_id_from_sku_store_id("/000N"), "");
     }
 }
