@@ -521,7 +521,7 @@ impl<R: Runtime> Iap<R> {
         for kv in addon_licenses {
             let license = kv.Value()?;
             let mut purchase = self.convert_license_to_purchase(&license, &request.product_type)?;
-            purchase.jws_representation = jws_representation.clone();
+            purchase.jws_representation.clone_from(&jws_representation);
 
             if purchase.purchase_state == PurchaseStateValue::Purchased {
                 purchases.push(purchase);
