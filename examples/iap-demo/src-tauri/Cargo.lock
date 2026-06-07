@@ -3235,7 +3235,7 @@ dependencies = [
 
 [[package]]
 name = "tauri-plugin-iap"
-version = "0.9.1"
+version = "0.10.0-rc.1"
 dependencies = [
  "base64 0.22.1",
  "log",
