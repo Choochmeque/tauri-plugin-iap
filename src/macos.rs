@@ -2,7 +2,8 @@ use serde::de::DeserializeOwned;
 use tauri::{AppHandle, Runtime, plugin::PluginApi};
 
 use crate::models::{
-    GetProductsResponse, ProductStatus, Purchase, PurchaseRequest, RestorePurchasesResponse,
+    GetProductsResponse, ProductStatus, Purchase, PurchaseRequest, RestorePurchasesRequest,
+    RestorePurchasesResponse,
 };
 
 /// Validation checks for macOS IAP functionality.
@@ -152,11 +153,16 @@ impl<R: Runtime> Iap<R> {
 
     pub async fn restore_purchases(
         &self,
-        product_type: String,
+        request: RestorePurchasesRequest,
     ) -> crate::Result<RestorePurchasesResponse> {
         validation::require_bundle()?;
 
-        self.plugin.restorePurchases(product_type).await.parse()
+        // The Microsoft-only fields on `request` are ignored here;
+        // macOS gets only the cross-platform `product_type`.
+        self.plugin
+            .restorePurchases(request.product_type)
+            .await
+            .parse()
     }
 
     /// No-op: macOS finishes transactions inside `purchase()` itself,

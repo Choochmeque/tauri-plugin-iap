@@ -20,7 +20,7 @@ use windows_collections::IIterable;
 use crate::error::{ErrorResponse, PluginInvokeError};
 use crate::models::{
     GetProductsResponse, PricingPhase, Product, ProductStatus, Purchase, PurchaseRequest,
-    PurchaseStateValue, RestorePurchasesResponse, SubscriptionOffer,
+    PurchaseStateValue, RestorePurchasesRequest, RestorePurchasesResponse, SubscriptionOffer,
 };
 use std::sync::{Arc, RwLock};
 
@@ -146,6 +146,30 @@ impl<R: Runtime> Iap<R> {
     /// Emit an event to the frontend (equivalent to `iOS`/Android `trigger` method).
     fn trigger<S: serde::Serialize + Clone>(&self, event: &str, payload: S) {
         let _ = self.app_handle.emit(event, payload);
+    }
+
+    /// Mint a Microsoft Store ID key (JWT) bound to the current
+    /// Microsoft account signed into the device. Backends use the key
+    /// as `b2bKey` / `beneficiaries[].identityValue` when calling
+    /// `purchase.mp.microsoft.com` / `collections.mp.microsoft.com` to
+    /// query the user's purchases without holding the user's MSA.
+    ///
+    /// `service_ticket` is an Entra ID access token with audience
+    /// `https://onestore.microsoft.com/b2b/keys/create/purchase`.
+    /// `publisher_user_id` is embedded verbatim in the key as the
+    /// `userId` claim so the backend can identity-bind the purchase.
+    fn mint_store_id_key(
+        &self,
+        service_ticket: &str,
+        publisher_user_id: &str,
+    ) -> crate::Result<String> {
+        let context = self.get_store_context()?;
+        let ticket = HSTRING::from(service_ticket);
+        let user_id = HSTRING::from(publisher_user_id);
+        let key = context
+            .GetCustomerPurchaseIdAsync(&ticket, &user_id)
+            .and_then(|op| op.get())?;
+        Ok(key.to_string())
     }
 
     /// Developer-defined product id exposed by Microsoft Store as `InAppOfferToken`.
@@ -415,6 +439,26 @@ impl<R: Runtime> Iap<R> {
         let purchase_time = FileTime::now().to_unix_time_millis();
         let purchase_token = WindowsPurchaseTokenV1::new(store_id, purchase_time)?.encode()?;
 
+        // Mint a Store ID key when the caller supplied Microsoft b2b
+        // credentials. Caller is presumed to have already fetched the
+        // service ticket from its backend (the publisher's Entra
+        // app) — this plugin only relays it to the WinRT API. Either
+        // field absent → field stays `None` (existing behaviour).
+        let jws_representation = if let (Some(ticket), Some(user_id)) = (
+            payload
+                .options
+                .as_ref()
+                .and_then(|o| o.service_ticket.as_deref()),
+            payload
+                .options
+                .as_ref()
+                .and_then(|o| o.publisher_user_id.as_deref()),
+        ) {
+            Some(self.mint_store_id_key(ticket, user_id)?)
+        } else {
+            None
+        };
+
         let purchase = Purchase {
             order_id: Some(purchase_token.clone()),
             package_name: product.title.clone(),
@@ -430,7 +474,7 @@ impl<R: Runtime> Iap<R> {
             ),
             signature: String::new(), // Windows doesn't provide signatures like Android
             original_id: None, // Windows doesn't have original transaction IDs like iOS/macOS
-            jws_representation: None, // Windows doesn't have JWS like iOS/macOS
+            jws_representation,
         };
 
         self.trigger("purchaseUpdated", purchase.clone());
@@ -440,7 +484,7 @@ impl<R: Runtime> Iap<R> {
     #[allow(clippy::unused_async)]
     pub async fn restore_purchases(
         &self,
-        product_type: String,
+        request: RestorePurchasesRequest,
     ) -> crate::Result<RestorePurchasesResponse> {
         let context = self.get_store_context()?;
 
@@ -449,6 +493,20 @@ impl<R: Runtime> Iap<R> {
             .GetAppLicenseAsync()
             .and_then(|async_op| async_op.get())?;
 
+        // Microsoft issues one Store ID key per user that covers every
+        // subscription / IAP, so mint it once and stamp it onto every
+        // returned purchase. Minting per-row would burn calls for no
+        // benefit — the backend's recurrence/collections query would
+        // resolve the same set either way.
+        let jws_representation = if let (Some(ticket), Some(user_id)) = (
+            request.service_ticket.as_deref(),
+            request.publisher_user_id.as_deref(),
+        ) {
+            Some(self.mint_store_id_key(ticket, user_id)?)
+        } else {
+            None
+        };
+
         let mut purchases = Vec::new();
 
         // Get add-on licenses (in-app purchases)
@@ -456,7 +514,8 @@ impl<R: Runtime> Iap<R> {
 
         for kv in addon_licenses {
             let license = kv.Value()?;
-            let purchase = self.convert_license_to_purchase(&license, &product_type)?;
+            let mut purchase = self.convert_license_to_purchase(&license, &request.product_type)?;
+            purchase.jws_representation = jws_representation.clone();
 
             if purchase.purchase_state == PurchaseStateValue::Purchased {
                 purchases.push(purchase);
