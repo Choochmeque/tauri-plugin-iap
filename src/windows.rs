@@ -395,7 +395,13 @@ impl<R: Runtime> Iap<R> {
 
         // Create purchase properties if we have an offer token (for subscriptions).
         // The offer_token is a SKU StoreId (e.g. `9NXXXX/000N`) which targets a specific SKU.
-        let offer_token = payload.options.and_then(|opts| opts.offer_token);
+        // Borrowed (not moved) because the Microsoft b2b credentials
+        // on `payload.options` are read again below to mint the Store
+        // ID key.
+        let offer_token = payload
+            .options
+            .as_ref()
+            .and_then(|opts| opts.offer_token.clone());
         let purchase_result = if let Some(token) = offer_token {
             let properties = StorePurchaseProperties::Create(&HSTRING::from(store_id.as_str()))?;
             properties.SetExtendedJsonData(&HSTRING::from(format!(r#"{{"skuId":"{token}"}}"#)))?;
