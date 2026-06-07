@@ -32,7 +32,7 @@ pub async fn restore_purchases<R: Runtime>(
     app: AppHandle<R>,
     payload: RestorePurchasesRequest,
 ) -> Result<RestorePurchasesResponse> {
-    app.iap().restore_purchases(payload.product_type).await
+    app.iap().restore_purchases(payload).await
 }
 
 #[command]

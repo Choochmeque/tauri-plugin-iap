@@ -59,10 +59,12 @@ impl<R: Runtime> Iap<R> {
 
     pub async fn restore_purchases(
         &self,
-        product_type: String,
+        request: RestorePurchasesRequest,
     ) -> crate::Result<RestorePurchasesResponse> {
+        // Microsoft-specific fields on `request` are no-ops on iOS /
+        // Android; the native side ignores them.
         self.0
-            .run_mobile_plugin_async("restorePurchases", RestorePurchasesRequest { product_type })
+            .run_mobile_plugin_async("restorePurchases", request)
             .await
             .map_err(Into::into)
     }

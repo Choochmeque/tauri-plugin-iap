@@ -5,7 +5,7 @@ use tauri::{AppHandle, Runtime, plugin::PluginApi};
 
 use crate::models::{
     GetProductsResponse, GetPurchaseHistoryResponse, ProductStatus, Purchase, PurchaseRequest,
-    RestorePurchasesResponse,
+    RestorePurchasesRequest, RestorePurchasesResponse,
 };
 
 #[allow(clippy::unnecessary_wraps)]
@@ -39,7 +39,7 @@ impl<R: Runtime> Iap<R> {
 
     pub async fn restore_purchases(
         &self,
-        _product_type: String,
+        _request: RestorePurchasesRequest,
     ) -> crate::Result<RestorePurchasesResponse> {
         Err(crate::Error::from(std::io::Error::other(
             "IAP is not supported on this platform",

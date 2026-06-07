@@ -81,6 +81,20 @@ pub struct PurchaseOptions {
     /// Defaults to `WITH_TIME_PRORATION` (1) if not specified.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub subscription_replacement_mode: Option<i32>,
+    /// Microsoft Store (Windows only): Entra ID access token, passed
+    /// as the `serviceTicket` parameter to
+    /// `StoreContext.GetCustomerPurchaseIdAsync`. When set together
+    /// with `publisher_user_id`, the plugin mints a Store ID key
+    /// after purchase and returns it in `Purchase.jws_representation`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub service_ticket: Option<String>,
+    /// Microsoft Store (Windows only): publisher-defined user
+    /// identifier (e.g. UUID) passed as the `publisherUserId`
+    /// parameter to `StoreContext.GetCustomerPurchaseIdAsync`.
+    /// Embedded in the minted Store ID key as the `userId` claim so
+    /// the backend can identity-bind the purchase.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub publisher_user_id: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -116,6 +130,12 @@ pub struct Purchase {
 pub struct RestorePurchasesRequest {
     #[serde(default = "default_product_type")]
     pub product_type: String,
+    /// See [`PurchaseOptions::service_ticket`].
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub service_ticket: Option<String>,
+    /// See [`PurchaseOptions::publisher_user_id`].
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub publisher_user_id: Option<String>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]

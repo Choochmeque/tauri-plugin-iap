@@ -185,6 +185,22 @@ export interface PurchaseOptions {
    * @see SubscriptionReplacementMode
    */
   subscriptionReplacementMode?: SubscriptionReplacementMode;
+  /**
+   * Microsoft Store (Windows only): Entra ID access token passed as
+   * the `serviceTicket` parameter to
+   * `StoreContext.GetCustomerPurchaseIdAsync`. When set together
+   * with `publisherUserId`, the plugin mints a Store ID key after
+   * the purchase succeeds and returns it in `Purchase.jwsRepresentation`.
+   */
+  serviceTicket?: string;
+  /**
+   * Microsoft Store (Windows only): publisher-defined user identifier
+   * (e.g. UUID) passed as the `publisherUserId` parameter to
+   * `StoreContext.GetCustomerPurchaseIdAsync`. Embedded in the
+   * minted Store ID key as the `userId` claim so the backend can
+   * identity-bind the purchase.
+   */
+  publisherUserId?: string;
 }
 
 /**
@@ -284,12 +300,19 @@ export async function purchase(
  */
 export async function restorePurchases(
   productType: "subs" | "inapp" = "subs",
+  options?: {
+    /** See {@link PurchaseOptions.serviceTicket}. */
+    serviceTicket?: string;
+    /** See {@link PurchaseOptions.publisherUserId}. */
+    publisherUserId?: string;
+  },
 ): Promise<RestorePurchasesResponse> {
   return await invoke<RestorePurchasesResponse>(
     "plugin:iap|restore_purchases",
     {
       payload: {
         productType,
+        ...options,
       },
     },
   );
