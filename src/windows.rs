@@ -150,25 +150,47 @@ impl<R: Runtime> Iap<R> {
 
     /// Mint a Microsoft Store ID key (JWT) bound to the current
     /// Microsoft account signed into the device. Backends use the key
-    /// as `b2bKey` / `beneficiaries[].identityValue` when calling
-    /// `purchase.mp.microsoft.com` / `collections.mp.microsoft.com` to
-    /// query the user's purchases without holding the user's MSA.
+    /// as `b2bKey` / `beneficiaries[].identityValue` when calling the
+    /// Microsoft Store services to query the user's purchases without
+    /// holding the user's MSA.
+    ///
+    /// Microsoft mints **per-API** keys: the one returned by
+    /// `GetCustomerPurchaseIdAsync` is only valid against
+    /// `purchase.mp.microsoft.com` (used for subscription
+    /// recurrence queries); the one from
+    /// `GetCustomerCollectionsIdAsync` is only valid against
+    /// `collections.mp.microsoft.com` (used for one-time product
+    /// ownership queries). The two are not interchangeable —
+    /// presenting one to the wrong surface yields
+    /// `AuthenticationTokenInvalid` on the "B2B key". The plugin
+    /// picks the right mint method from the existing
+    /// `product_type` field already on every purchase / restore
+    /// payload:
+    ///   * `"subs"`  → `GetCustomerPurchaseIdAsync`
+    ///   * `"inapp"` → `GetCustomerCollectionsIdAsync`
     ///
     /// `service_ticket` is an Entra ID access token with audience
-    /// `https://onestore.microsoft.com/b2b/keys/create/purchase`.
-    /// `publisher_user_id` is embedded verbatim in the key as the
-    /// `userId` claim so the backend can identity-bind the purchase.
+    /// `https://onestore.microsoft.com`. `publisher_user_id` is
+    /// embedded verbatim in the key as the `userId` claim so the
+    /// backend can identity-bind the purchase.
     fn mint_store_id_key(
         &self,
+        product_type: &str,
         service_ticket: &str,
         publisher_user_id: &str,
     ) -> crate::Result<String> {
         let context = self.get_store_context()?;
         let ticket = HSTRING::from(service_ticket);
         let user_id = HSTRING::from(publisher_user_id);
-        let key = context
-            .GetCustomerPurchaseIdAsync(&ticket, &user_id)
-            .and_then(|op| op.get())?;
+        let key = if product_type == "subs" {
+            context
+                .GetCustomerPurchaseIdAsync(&ticket, &user_id)
+                .and_then(|op| op.get())?
+        } else {
+            context
+                .GetCustomerCollectionsIdAsync(&ticket, &user_id)
+                .and_then(|op| op.get())?
+        };
         Ok(key.to_string())
     }
 
@@ -460,7 +482,7 @@ impl<R: Runtime> Iap<R> {
                 .as_ref()
                 .and_then(|o| o.publisher_user_id.as_deref()),
         ) {
-            Some(self.mint_store_id_key(ticket, user_id)?)
+            Some(self.mint_store_id_key(&payload.product_type, ticket, user_id)?)
         } else {
             None
         };
@@ -508,7 +530,7 @@ impl<R: Runtime> Iap<R> {
             request.service_ticket.as_deref(),
             request.publisher_user_id.as_deref(),
         ) {
-            Some(self.mint_store_id_key(ticket, user_id)?)
+            Some(self.mint_store_id_key(&request.product_type, ticket, user_id)?)
         } else {
             None
         };
