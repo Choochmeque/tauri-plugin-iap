@@ -16,8 +16,8 @@ importers:
         version: '@choochmeque/tauri-plugin-iap-api@file:../..'
     devDependencies:
       '@choochmeque/tauri-macos-xcode':
-        specifier: ^0.2.24
-        version: 0.2.24
+        specifier: ^0.2.26
+        version: 0.2.26
       '@sveltejs/vite-plugin-svelte':
         specifier: ^7.1.2
         version: 7.1.2(svelte@5.56.3(@typescript-eslint/types@8.57.0))(vite@8.0.16(esbuild@0.27.2))
@@ -33,8 +33,8 @@ importers:
 
 packages:
 
-  '@choochmeque/tauri-macos-xcode@0.2.24':
-    resolution: {integrity: sha512-XoDZj+7M2oi4iaJVhICZrrwCDQ7D5TS6EffjOkKWiFsIcFcrqUYIkmeFKMOOgB0xICMyGerCDRvl0CdhPYVpdQ==}
+  '@choochmeque/tauri-macos-xcode@0.2.26':
+    resolution: {integrity: sha512-XMNHTNZ2dY5P0bCRjdgvavNTvlAN/OhG1F/ZP1UGsoMMJlsqy6gdWAO493Ik2S/MgiXm2IfaYmWEoO876OaFvg==}
     hasBin: true
 
   '@choochmeque/tauri-plugin-iap-api@file:../..':
@@ -458,9 +458,9 @@ packages:
   colord@2.9.3:
     resolution: {integrity: sha512-jeC1axXpnb0/2nn/Y1LPuLdgXBLH7aDcHu4KEKfqw3CUhX7ZpfBSlPKyqXE6btIgEzfWtrX3/tyBCaCvXvMkOw==}
 
-  commander@14.0.3:
-    resolution: {integrity: sha512-H+y0Jo/T1RZ9qPP4Eh1pkcQcLRglraJaSLoyOtHxu6AapkjWVCy2Sit1QQ4x3Dng8qDlSsZEet7g5Pq06MvTgw==}
-    engines: {node: '>=20'}
+  commander@15.0.0:
+    resolution: {integrity: sha512-z67u4ZhzCL/Tydu1lJARtEZYWbWaN7oYLHbsuzocr6y4N6WZAagG3RQ4FW61V1/0+jImpj293XfrcYnd1qxtPg==}
+    engines: {node: '>=22.12.0'}
 
   debug@4.4.3:
     resolution: {integrity: sha512-RGwwWnwQvkVfavKVt22FGLw+xYSdzARwm0ru6DhTVA3umU5hZc28V3kO4stgYryrTlLpuvgI9GiijltAjNbcqA==}
@@ -516,8 +516,8 @@ packages:
       picomatch:
         optional: true
 
-  fflate@0.8.2:
-    resolution: {integrity: sha512-cPJU47OaAoCbg0pBvzsgpTPhmhqI5eJjh/JIu8tPj5q+T7iLvW/JAYUqmE7KOB4R1ZyEhzBaIQpQpardBF5z8A==}
+  fflate@0.8.3:
+    resolution: {integrity: sha512-tbZNuJrLwGUp3zshBtdy4W+ORxZuIh8a5ilyIEQDC5rY1f3U20JMry0Ll3WBzU58EZKsEuJFXhb5gwv8CsPvgA==}
 
   fft.js@4.0.4:
     resolution: {integrity: sha512-f9c00hphOgeQTlDyavwTtu6RiK8AIFjD6+jvXkNkpeQ7rirK3uFWVpalkoS4LAwbdX7mfZ8aoBfFVQX1Re/8aw==}
@@ -544,8 +544,8 @@ packages:
     resolution: {integrity: sha512-vK9P5/iUfdl95AI+JVyUuIcVtd4ofvtrOr3HNtM2yxC9bnMbEdp3x01OhQNnjb8IJYi38VlTE3mBXwcfvywuSw==}
     engines: {node: '>= 14'}
 
-  image-js@1.6.0:
-    resolution: {integrity: sha512-v9/cvtQnkhRO1pxharqncRy2UaBHii/JC48I3BT7VX/7pjedP00xLeFIPzLYCYSG9SPeve4uEHHE0phpQDPLjg==}
+  image-js@1.6.1:
+    resolution: {integrity: sha512-lLhyJCj7Ip5I0nJLYlsir1SBlDJACracpcMkZtRN+FnrS1eN3SHD0F2Yb7kmfVxCp3EV9EcMyCXFfKCjHLRTEw==}
 
   image-type@4.1.0:
     resolution: {integrity: sha512-CFJMJ8QK8lJvRlTCEgarL4ro6hfDQKif2HjSvYCdQZESaIPV4v9imrf7BQHK+sQeTeNeMpWciR9hyC/g8ybXEg==}
@@ -684,8 +684,8 @@ packages:
   ml-regression-polynomial-2d@1.0.0:
     resolution: {integrity: sha512-r34kaawZKMwjORIdzpa/o5fnjlTXkkaLJ3B4vvFNeKlvEGPtApqFxbDRmw07e2CjUH2MhGIChpMeXp/XB3Iogg==}
 
-  ml-spectra-processing@14.28.1:
-    resolution: {integrity: sha512-/0fjo5jwrIWbMC5G925IWaxpoSXalG+dHGXQVfOUjyzw2gC0YC2+fHATLYmRmyaa5hyhE+Mobk6AMGhz61M73Q==}
+  ml-spectra-processing@14.29.0:
+    resolution: {integrity: sha512-825CS864krbjMv7OB0mbjgAmyOL5ymj1OGa0gAzz1h1Dcd3Eeol2DaOimSiPYmRhW+iYhpeQnb7cSU0mlSK6+g==}
 
   ml-xsadd@2.0.0:
     resolution: {integrity: sha512-VoAYUqmPRmzKbbqRejjqceGFp3VF81Qe8XXFGU0UXLxB7Mf4GGvyGq5Qn3k4AiQgDEV6WzobqlPOd+j0+m6IrA==}
@@ -764,10 +764,6 @@ packages:
 
   tiff@7.1.3:
     resolution: {integrity: sha512-YEEq3fT++2pdta/9P/vGG4QRMdZQoe6W6JNaWnIi6NvAsbeNITwFCtmWwL/BZvOi+uo2I3ohyOkD3sZfme+c6g==}
-
-  tinyglobby@0.2.16:
-    resolution: {integrity: sha512-pn99VhoACYR8nFHhxqix+uvsbXineAasWm5ojXoN8xEwK5Kd3/TrhNn1wByuD52UxWRLy8pu+kRMniEi6Eq9Zg==}
-    engines: {node: '>=12.0.0'}
 
   tinyglobby@0.2.17:
     resolution: {integrity: sha512-wXR/dYpcqKmfWpEdZjiKJOwCNFndD0DMnrW/cYjVGttEkBfVgcLFHoNrlj47mjOVic9yyNu65alsgF4NQyTa2g==}
@@ -848,12 +844,12 @@ packages:
 
 snapshots:
 
-  '@choochmeque/tauri-macos-xcode@0.2.24':
+  '@choochmeque/tauri-macos-xcode@0.2.26':
     dependencies:
-      commander: 14.0.3
-      image-js: 1.6.0
+      commander: 15.0.0
+      image-js: 1.6.1
       plist: 5.0.0
-      tinyglobby: 0.2.16
+      tinyglobby: 0.2.17
     transitivePeerDependencies:
       - debug
       - supports-color
@@ -1130,7 +1126,7 @@ snapshots:
 
   colord@2.9.3: {}
 
-  commander@14.0.3: {}
+  commander@15.0.0: {}
 
   debug@4.4.3:
     dependencies:
@@ -1192,14 +1188,14 @@ snapshots:
 
   fast-png@8.0.0:
     dependencies:
-      fflate: 0.8.2
+      fflate: 0.8.3
       iobuffer: 6.0.1
 
   fdir@6.5.0(picomatch@4.0.4):
     optionalDependencies:
       picomatch: 4.0.4
 
-  fflate@0.8.2: {}
+  fflate@0.8.3: {}
 
   fft.js@4.0.4: {}
 
@@ -1219,7 +1215,7 @@ snapshots:
       - supports-color
     optional: true
 
-  image-js@1.6.0:
+  image-js@1.6.1:
     dependencies:
       bresenham-zingl: 0.2.5
       colord: 2.9.3
@@ -1236,7 +1232,7 @@ snapshots:
       ml-ransac: 1.0.0
       ml-regression-multivariate-linear: 2.0.4
       ml-regression-polynomial-2d: 1.0.0
-      ml-spectra-processing: 14.28.1
+      ml-spectra-processing: 14.29.0
       robust-point-in-polygon: 1.0.3
       ssim.js: 3.5.0
       tiff: 7.1.3
@@ -1382,7 +1378,7 @@ snapshots:
       ml-matrix: 6.12.2
       ml-regression-base: 4.0.1
 
-  ml-spectra-processing@14.28.1:
+  ml-spectra-processing@14.29.0:
     dependencies:
       binary-search: 1.3.6
       cheminfo-types: 1.15.0
@@ -1506,13 +1502,8 @@ snapshots:
 
   tiff@7.1.3:
     dependencies:
-      fflate: 0.8.2
+      fflate: 0.8.3
       iobuffer: 6.0.1
-
-  tinyglobby@0.2.16:
-    dependencies:
-      fdir: 6.5.0(picomatch@4.0.4)
-      picomatch: 4.0.4
 
   tinyglobby@0.2.17:
     dependencies:
