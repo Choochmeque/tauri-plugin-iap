@@ -10,8 +10,8 @@ use windows::core::{HSTRING, Interface};
 use windows::{
     Foundation::DateTime,
     Services::Store::{
-        StoreConsumableStatus, StoreContext, StoreLicense, StoreProduct, StorePurchaseProperties,
-        StorePurchaseStatus,
+        StoreConsumableStatus, StoreContext, StoreDurationUnit, StoreLicense, StoreProduct,
+        StorePurchaseProperties, StorePurchaseStatus,
     },
     Win32::UI::Shell::IInitializeWithWindow,
 };
@@ -30,6 +30,39 @@ fn reject(code: &str, message: impl Into<String>) -> crate::Error {
         message: Some(message.into()),
         data: (),
     }))
+}
+
+/// Parse a Microsoft Store formatted price string (e.g. `"$4.99"`, `"4,99 €"`)
+/// into a micro-units integer. Falls back to 0 on unparseable input.
+#[allow(
+    clippy::cast_possible_truncation,
+    clippy::cast_sign_loss,
+    clippy::cast_precision_loss
+)]
+fn formatted_price_to_micros(formatted: &str) -> i64 {
+    let numeric: String = formatted
+        .chars()
+        .filter(|c| c.is_ascii_digit() || *c == '.')
+        .collect();
+    let value: f64 = numeric.parse().unwrap_or(0.0);
+    (value * 1_000_000.0) as i64
+}
+
+/// Render a Microsoft Store duration (value + `StoreDurationUnit`) as an
+/// ISO-8601 period string compatible with `PricingPhase.billing_period` on
+/// Android. Sub-day units land under the time designator (`PT…`); day/week/
+/// month/year stay at the date level.
+fn iso_period(value: u32, unit: StoreDurationUnit) -> String {
+    match unit {
+        StoreDurationUnit::Minute => format!("PT{value}M"),
+        StoreDurationUnit::Hour => format!("PT{value}H"),
+        StoreDurationUnit::Day => format!("P{value}D"),
+        StoreDurationUnit::Week => format!("P{value}W"),
+        StoreDurationUnit::Year => format!("P{value}Y"),
+        // Treat Month and any unknown value as month — matches the previous
+        // default and the most common Microsoft Store subscription cadence.
+        _ => format!("P{value}M"),
+    }
 }
 
 /// Microsoft Store has no native per-transaction token, but our cross-platform API
@@ -300,79 +333,70 @@ impl<R: Runtime> Iap<R> {
         let description = store_product.Description()?.to_string();
 
         let price = store_product.Price()?;
-
-        let formatted_price = price.FormattedPrice()?.to_string();
-
         let currency_code = price.CurrencyCode()?.to_string();
+        // Use the base (recurring) price so the displayed string and parsed
+        // micros agree even when the customer is currently eligible for a
+        // free trial or a sale price.
+        let product_formatted_price = price.FormattedBasePrice()?.to_string();
+        let product_price_micros = formatted_price_to_micros(&product_formatted_price);
 
-        // Get the raw price value
-        let formatted_base_price = price.FormattedBasePrice()?.to_string();
-
-        // Parse price to get numeric value (remove currency symbols)
-        let price_value = formatted_base_price
-            .chars()
-            .filter(|c| c.is_numeric() || *c == '.')
-            .collect::<String>()
-            .parse::<f64>()
-            .unwrap_or(0.0);
-
-        #[allow(
-            clippy::cast_possible_truncation,
-            clippy::cast_sign_loss,
-            clippy::cast_precision_loss
-        )]
-        let price_amount_micros = (price_value * 1_000_000.0) as i64;
-
-        // Handle subscription offers if this is a subscription product
+        // For subscriptions, walk every SKU and build a SubscriptionOffer per
+        // subscription SKU. If a SKU has a free trial configured (via
+        // StoreSubscriptionInfo.HasTrialPeriod), emit a finite free phase
+        // followed by the recurring phase — mirroring StoreKit's intro+regular
+        // shape on macOS and Google Play's free-trial offer on Android.
         let subscription_offer_details = if product_type == "subs" {
             let mut offers = Vec::new();
-
-            // Get SKUs for subscription details
             let skus = store_product.Skus()?;
             let sku_count = skus.Size()?;
 
             for i in 0..sku_count {
                 let sku = skus.GetAt(i)?;
 
+                // SubscriptionInfo is null (→ Err) on non-subscription SKUs,
+                // so this is enough of a filter on its own.
+                let Ok(info) = sku.SubscriptionInfo() else {
+                    continue;
+                };
+
                 let sku_id = sku.StoreId()?.to_string();
                 let sku_price = sku.Price()?;
+                let sku_formatted = sku_price.FormattedBasePrice()?.to_string();
+                let sku_micros = formatted_price_to_micros(&sku_formatted);
 
-                // Check if this SKU has subscription info
-                let subscription_info = sku.SubscriptionInfo();
+                let billing_period = info.BillingPeriod()?;
+                let billing_period_unit = info.BillingPeriodUnit()?;
 
-                if let Ok(info) = subscription_info {
-                    let billing_period = info.BillingPeriod()?;
-                    let billing_period_unit = info.BillingPeriodUnit()?;
+                let mut pricing_phases = Vec::with_capacity(2);
 
-                    let billing_period_str = format!(
-                        "P{}{}",
-                        billing_period,
-                        match billing_period_unit.0 {
-                            0 => "D", // Day
-                            1 => "W", // Week
-                            3 => "Y", // Year
-                            _ => "M", // Month (default)
-                        }
-                    );
-
-                    let pricing_phase = PricingPhase {
-                        formatted_price: sku_price.FormattedPrice()?.to_string(),
+                if info.HasTrialPeriod().unwrap_or(false) {
+                    let trial_period = info.TrialPeriod()?;
+                    let trial_unit = info.TrialPeriodUnit()?;
+                    pricing_phases.push(PricingPhase {
+                        formatted_price: String::new(),
                         price_currency_code: currency_code.clone(),
-                        price_amount_micros,
-                        billing_period: billing_period_str,
-                        billing_cycle_count: 0, // Windows doesn't provide this directly
-                        recurrence_mode: 1,     // Infinite recurring
-                    };
-
-                    let offer = SubscriptionOffer {
-                        offer_token: sku_id.clone(),
-                        base_plan_id: sku_id,
-                        offer_id: None,
-                        pricing_phases: vec![pricing_phase],
-                    };
-
-                    offers.push(offer);
+                        price_amount_micros: 0,
+                        billing_period: iso_period(trial_period, trial_unit),
+                        billing_cycle_count: 1,
+                        recurrence_mode: 2, // FINITE_RECURRING
+                    });
                 }
+
+                pricing_phases.push(PricingPhase {
+                    formatted_price: sku_formatted,
+                    price_currency_code: currency_code.clone(),
+                    price_amount_micros: sku_micros,
+                    billing_period: iso_period(billing_period, billing_period_unit),
+                    billing_cycle_count: 0,
+                    recurrence_mode: 1, // INFINITE_RECURRING
+                });
+
+                offers.push(SubscriptionOffer {
+                    offer_token: sku_id.clone(),
+                    base_plan_id: sku_id,
+                    offer_id: None,
+                    pricing_phases,
+                });
             }
 
             if offers.is_empty() {
@@ -383,6 +407,23 @@ impl<R: Runtime> Iap<R> {
         } else {
             None
         };
+
+        // StoreProduct.Price reports the customer's currently acquirable price
+        // — when a subscription has a free trial and the customer is eligible,
+        // that's $0. Prefer the recurring SKU's price for the product-level
+        // fields so callers see the real subscription price.
+        let (formatted_price, price_amount_micros) = subscription_offer_details
+            .as_ref()
+            .and_then(|offers| {
+                offers.iter().find_map(|offer| {
+                    offer
+                        .pricing_phases
+                        .iter()
+                        .rfind(|p| p.recurrence_mode == 1)
+                        .map(|p| (p.formatted_price.clone(), p.price_amount_micros))
+                })
+            })
+            .unwrap_or((product_formatted_price, product_price_micros));
 
         Ok(Product {
             product_id,
@@ -929,5 +970,35 @@ mod tests {
         // Malformed input with no product prefix returns the empty prefix
         // rather than silently masking the bad data.
         assert_eq!(Iap::<tauri::Wry>::store_id_from_sku_store_id("/000N"), "");
+    }
+
+    #[test]
+    fn test_formatted_price_to_micros_basic() {
+        assert_eq!(formatted_price_to_micros("$4.99"), 4_990_000);
+        assert_eq!(formatted_price_to_micros("9.99 USD"), 9_990_000);
+        assert_eq!(formatted_price_to_micros("$0.00"), 0);
+        assert_eq!(formatted_price_to_micros("Free"), 0);
+        assert_eq!(formatted_price_to_micros(""), 0);
+    }
+
+    #[test]
+    fn test_formatted_price_to_micros_integer_value() {
+        assert_eq!(formatted_price_to_micros("$10"), 10_000_000);
+    }
+
+    #[test]
+    fn test_iso_period_units() {
+        assert_eq!(iso_period(15, StoreDurationUnit::Minute), "PT15M");
+        assert_eq!(iso_period(2, StoreDurationUnit::Hour), "PT2H");
+        assert_eq!(iso_period(7, StoreDurationUnit::Day), "P7D");
+        assert_eq!(iso_period(1, StoreDurationUnit::Week), "P1W");
+        assert_eq!(iso_period(1, StoreDurationUnit::Month), "P1M");
+        assert_eq!(iso_period(1, StoreDurationUnit::Year), "P1Y");
+    }
+
+    #[test]
+    fn test_iso_period_unknown_unit_defaults_to_month() {
+        // Unknown enum variants must not crash the conversion.
+        assert_eq!(iso_period(3, StoreDurationUnit(42)), "P3M");
     }
 }
