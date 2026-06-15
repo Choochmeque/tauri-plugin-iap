@@ -363,17 +363,25 @@ impl<R: Runtime> Iap<R> {
                 let sku_price = sku.Price()?;
                 let sku_formatted = sku_price.FormattedBasePrice()?.to_string();
                 let sku_micros = formatted_price_to_micros(&sku_formatted);
+                let sku_current_formatted = sku_price.FormattedPrice()?.to_string();
+                let sku_current_micros = formatted_price_to_micros(&sku_current_formatted);
 
                 let billing_period = info.BillingPeriod()?;
                 let billing_period_unit = info.BillingPeriodUnit()?;
 
                 let mut pricing_phases = Vec::with_capacity(2);
 
-                if info.HasTrialPeriod().unwrap_or(false) {
+                // Only surface the trial phase when the customer is currently
+                // eligible for it — i.e. the SKU's acquirable price is 0.
+                // `HasTrialPeriod` is product metadata and stays true even for
+                // customers who've already burned the trial; without this gate
+                // we'd label the recurring price as the trial price. Mirrors
+                // StoreKit's eligibility-filtered `introductoryOffer` on macOS.
+                if info.HasTrialPeriod().unwrap_or(false) && sku_current_micros == 0 {
                     let trial_period = info.TrialPeriod()?;
                     let trial_unit = info.TrialPeriodUnit()?;
                     pricing_phases.push(PricingPhase {
-                        formatted_price: String::new(),
+                        formatted_price: sku_current_formatted,
                         price_currency_code: currency_code.clone(),
                         price_amount_micros: 0,
                         billing_period: iso_period(trial_period, trial_unit),
