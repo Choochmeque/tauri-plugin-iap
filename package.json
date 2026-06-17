@@ -44,18 +44,18 @@
     "format:check": "prettier --check \"./**/*.{cjs,mjs,js,jsx,mts,ts,tsx,html,css,json}\""
   },
   "dependencies": {
-    "@tauri-apps/api": "^2.6.0"
+    "@tauri-apps/api": "^2.11.1"
   },
   "devDependencies": {
     "@rollup/plugin-typescript": "^12.1.4",
-    "@vitest/coverage-v8": "^4.0.13",
-    "@vitest/ui": "^4.0.13",
-    "happy-dom": "^20.0.10",
+    "@vitest/coverage-v8": "^4.1.9",
+    "@vitest/ui": "^4.1.9",
+    "happy-dom": "^20.10.5",
     "prettier": "3.8.4",
     "rollup": "^4.60.3",
     "tslib": "^2.6.2",
     "typescript": "^6.0.2",
-    "vitest": "^4.0.13"
+    "vitest": "^4.1.9"
   },
   "packageManager": "pnpm@10.9.0+sha512.0486e394640d3c1fb3c9d43d49cf92879ff74f8516959c235308f5a8f62e2e19528a65cdc2a3058f587cde71eba3d5b56327c8c33a97e4c4051ca48a10ca2d5f"
 }

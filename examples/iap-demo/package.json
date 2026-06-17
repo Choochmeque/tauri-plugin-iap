@@ -11,14 +11,14 @@
     "tauri:macos:dev": "tauri-macos-xcode dev --open"
   },
   "dependencies": {
-    "@tauri-apps/api": "^2.9.0",
+    "@tauri-apps/api": "^2.11.1",
     "tauri-plugin-iap-api": "file:../../"
   },
   "devDependencies": {
-    "@choochmeque/tauri-macos-xcode": "^0.2.26",
+    "@choochmeque/tauri-macos-xcode": "^0.2.30",
     "@sveltejs/vite-plugin-svelte": "^7.1.2",
     "@tauri-apps/cli": "^2.11.1",
     "svelte": "^5.56.3",
-    "vite": "^8.0.14"
+    "vite": "^8.0.16"
   }
 }
