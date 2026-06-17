@@ -26,7 +26,7 @@ A Tauri plugin for In-App Purchases (IAP) with support for subscriptions on iOS 
 ## Platform Support
 
 - **iOS**: StoreKit 2 (requires iOS 15.0+)
-- **Android**: Google Play Billing Library v8.0.0
+- **Android**: Google Play Billing Library v9.0.0
 - **Windows**: Microsoft Store API (Windows 10/11)
 - **macOS**: StoreKit 2 (requires macOS 13.0+)
 
@@ -150,12 +150,12 @@ const purchaseResult = await purchase('subscription_id_1', 'subs', {
   appAccountToken: '550e8400-e29b-41d4-a716-446655440000'
 });
 
-// Upgrade/downgrade subscription (Android)
+// Upgrade/downgrade subscription (Android, Billing Library 9.0+)
 import { SubscriptionReplacementMode } from '@choochmeque/tauri-plugin-iap-api';
 
 const upgraded = await purchase('premium_subscription', 'subs', {
   offerToken: 'premium_offer_token',
-  oldPurchaseToken: currentSubscription.purchaseToken,
+  oldProductId: currentSubscription.productId,
   subscriptionReplacementMode: SubscriptionReplacementMode.WITH_TIME_PRORATION
 });
 
@@ -310,8 +310,8 @@ Initiates a purchase flow with enhanced options for fraud prevention and account
   - `obfuscatedAccountId`: (Android) Hashed account ID for fraud prevention
   - `obfuscatedProfileId`: (Android) Hashed profile ID for fraud prevention
   - `appAccountToken`: (iOS) UUID string for account tracking and fraud prevention
-  - `oldPurchaseToken`: (Android) Purchase token of existing subscription to replace for upgrades/downgrades
-  - `subscriptionReplacementMode`: (Android) Proration mode using `SubscriptionReplacementMode` enum (defaults to `WITH_TIME_PRORATION`)
+  - `oldProductId`: (Android) Product ID of the existing subscription to replace for upgrades/downgrades (Billing Library 9.0+)
+  - `subscriptionReplacementMode`: (Android) Proration mode using `SubscriptionReplacementMode` enum — `WITH_TIME_PRORATION`, `CHARGE_PRORATED_PRICE`, `WITHOUT_PRORATION`, `CHARGE_FULL_PRICE`, `DEFERRED`, `KEEP_EXISTING` (defaults to `WITH_TIME_PRORATION`)
 
 **Returns:** Purchase object with transaction details
 
