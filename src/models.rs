@@ -72,13 +72,15 @@ pub struct PurchaseOptions {
     pub obfuscated_profile_id: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub app_account_token: Option<String>,
-    /// Purchase token of the existing subscription to replace (Android only).
-    /// When set, the purchase becomes a subscription upgrade/downgrade.
+    /// Product ID of the existing subscription to replace (Android only).
+    /// When set, the purchase becomes a subscription upgrade/downgrade via the
+    /// Billing Library 9.0+ `SubscriptionProductReplacementParams` API.
+    /// Use the previous purchase's `product_id`.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub old_purchase_token: Option<String>,
+    pub old_product_id: Option<String>,
     /// Replacement mode for subscription upgrades/downgrades (Android only).
-    /// Maps to Google Play `BillingFlowParams.SubscriptionUpdateParams.ReplacementMode`.
-    /// Defaults to `WITH_TIME_PRORATION` (1) if not specified.
+    /// Maps to Google Play `BillingFlowParams.ProductDetailsParams.SubscriptionProductReplacementParams.ReplacementMode`.
+    /// Used when `old_product_id` is set. Defaults to `WITH_TIME_PRORATION` (1) if not specified.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub subscription_replacement_mode: Option<i32>,
     /// Microsoft Store (Windows only): Entra ID access token, passed
@@ -462,13 +464,13 @@ mod tests {
             .expect("Expected PurchaseOptions to be present");
         assert_eq!(opts.offer_token, Some("token".to_string()));
         assert_eq!(opts.obfuscated_account_id, Some("acc123".to_string()));
-        assert_eq!(opts.old_purchase_token, None);
+        assert_eq!(opts.old_product_id, None);
         assert_eq!(opts.subscription_replacement_mode, None);
     }
 
     #[test]
     fn test_purchase_options_with_subscription_update() {
-        let json = r#"{"productId":"prod1","offerToken":"token","oldPurchaseToken":"old_token_123","subscriptionReplacementMode":2}"#;
+        let json = r#"{"productId":"prod1","offerToken":"token","oldProductId":"basic_monthly","subscriptionReplacementMode":2}"#;
         let request: PurchaseRequest =
             serde_json::from_str(json).expect("Failed to deserialize PurchaseRequest");
 
@@ -477,7 +479,7 @@ mod tests {
             .options
             .expect("Expected PurchaseOptions to be present");
         assert_eq!(opts.offer_token, Some("token".to_string()));
-        assert_eq!(opts.old_purchase_token, Some("old_token_123".to_string()));
+        assert_eq!(opts.old_product_id, Some("basic_monthly".to_string()));
         assert_eq!(opts.subscription_replacement_mode, Some(2));
     }
 

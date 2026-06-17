@@ -29,7 +29,7 @@ class PurchaseArgs {
     var offerToken: String? = null
     var obfuscatedAccountId: String? = null
     var obfuscatedProfileId: String? = null
-    var oldPurchaseToken: String? = null
+    var oldProductId: String? = null
     var subscriptionReplacementMode: Int? = null
 }
 
@@ -207,42 +207,42 @@ class IapPlugin(private val activity: Activity): Plugin(activity), PurchasesUpda
             if (billingResult.responseCode == BillingClient.BillingResponseCode.OK && productDetailsResult.productDetailsList.isNotEmpty()) {
                 val productDetails = productDetailsResult.productDetailsList[0]
 
-                // Get offer token from args or from first available subscription offer
-                val offerToken = args.offerToken ?: 
-                    productDetails.subscriptionOfferDetails?.firstOrNull()?.offerToken
-                
                 val productDetailsParamsBuilder = BillingFlowParams.ProductDetailsParams.newBuilder()
                     .setProductDetails(productDetails)
-                
-                offerToken?.let { productDetailsParamsBuilder.setOfferToken(it) }
-                
-                val productDetailsParamsList = listOf(productDetailsParamsBuilder.build())
-                
-                val billingFlowParamsBuilder = BillingFlowParams.newBuilder()
-                    .setProductDetailsParamsList(productDetailsParamsList)
-                
-                // Add obfuscated account ID if provided
-                args.obfuscatedAccountId?.let { accountId ->
-                    billingFlowParamsBuilder.setObfuscatedAccountId(accountId)
-                }
-                
-                // Add obfuscated profile ID if provided
-                args.obfuscatedProfileId?.let { profileId ->
-                    billingFlowParamsBuilder.setObfuscatedProfileId(profileId)
+
+                // Subscription upgrade/downgrade: attach replacement params per-product (Billing 9.0+)
+                val isKeepExisting = args.oldProductId != null &&
+                    args.subscriptionReplacementMode == BillingFlowParams.ProductDetailsParams
+                        .SubscriptionProductReplacementParams.ReplacementMode.KEEP_EXISTING
+
+                // KEEP_EXISTING must not set an offer token (Play rejects the flow otherwise).
+                if (!isKeepExisting) {
+                    val offerToken = args.offerToken
+                        ?: productDetails.subscriptionOfferDetails?.firstOrNull()?.offerToken
+                    offerToken?.let { productDetailsParamsBuilder.setOfferToken(it) }
                 }
 
-                // Add subscription update params for upgrades/downgrades
-                args.oldPurchaseToken?.let { oldToken ->
+                args.oldProductId?.let { oldId ->
                     val replacementMode = args.subscriptionReplacementMode
-                        ?: BillingFlowParams.SubscriptionUpdateParams.ReplacementMode.WITH_TIME_PRORATION
+                        ?: BillingFlowParams.ProductDetailsParams
+                            .SubscriptionProductReplacementParams.ReplacementMode.WITH_TIME_PRORATION
 
-                    val subscriptionUpdateParams = BillingFlowParams.SubscriptionUpdateParams.newBuilder()
-                        .setOldPurchaseToken(oldToken)
-                        .setSubscriptionReplacementMode(replacementMode)
+                    val replacementParams = BillingFlowParams.ProductDetailsParams
+                        .SubscriptionProductReplacementParams.newBuilder()
+                        .setOldProductId(oldId)
+                        .setReplacementMode(replacementMode)
                         .build()
 
-                    billingFlowParamsBuilder.setSubscriptionUpdateParams(subscriptionUpdateParams)
+                    productDetailsParamsBuilder.setSubscriptionProductReplacementParams(replacementParams)
                 }
+
+                val productDetailsParamsList = listOf(productDetailsParamsBuilder.build())
+
+                val billingFlowParamsBuilder = BillingFlowParams.newBuilder()
+                    .setProductDetailsParamsList(productDetailsParamsList)
+
+                args.obfuscatedAccountId?.let(billingFlowParamsBuilder::setObfuscatedAccountId)
+                args.obfuscatedProfileId?.let(billingFlowParamsBuilder::setObfuscatedProfileId)
 
                 val billingFlowParams = billingFlowParamsBuilder.build()
                 
