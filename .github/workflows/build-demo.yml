@@ -35,7 +35,7 @@ jobs:
           run_install: false
       - uses: actions/setup-node@v6
         with:
-          node-version: "20"
+          node-version: "24"
           cache: "pnpm"
 
       - name: Build plugin JS bundle
@@ -73,7 +73,7 @@ jobs:
           run_install: false
       - uses: actions/setup-node@v6
         with:
-          node-version: "20"
+          node-version: "24"
           cache: "pnpm"
       - run: pnpm install && pnpm build
       - working-directory: examples/iap-demo
@@ -101,7 +101,7 @@ jobs:
           run_install: false
       - uses: actions/setup-node@v6
         with:
-          node-version: "20"
+          node-version: "24"
           cache: "pnpm"
       - run: pnpm install && pnpm build
       - working-directory: examples/iap-demo
