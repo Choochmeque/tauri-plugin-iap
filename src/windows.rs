@@ -265,7 +265,10 @@ impl<R: Runtime> Iap<R> {
                 HSTRING::from("UnmanagedConsumable"),
                 HSTRING::from("Durable"),
             ],
-            "subs" => vec![HSTRING::from("Subscription")],
+            // Microsoft Store surfaces subscription add-ons under the
+            // `Durable` kind in practice, even when Partner Center
+            // categorizes them as Subscription (see #232). Query both.
+            "subs" => vec![HSTRING::from("Subscription"), HSTRING::from("Durable")],
             _ => vec![
                 HSTRING::from("Consumable"),
                 HSTRING::from("UnmanagedConsumable"),
