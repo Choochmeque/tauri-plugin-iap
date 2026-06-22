@@ -248,7 +248,15 @@ class IapPlugin {
                             if let statuses = try? await product.subscription?.status {
                                 for status in statuses {
                                     if status.state == .subscribed {
-                                        statusResult["isAutoRenewing"] = true
+                                        // `.subscribed` only means the subscription is still active;
+                                        // it does NOT imply auto-renew is on. A subscription that the
+                                        // user cancelled (but hasn't expired yet) is also `.subscribed`.
+                                        // The actual renewal intent lives in renewalInfo.willAutoRenew.
+                                        if case .verified(let renewalInfo) = status.renewalInfo {
+                                            statusResult["isAutoRenewing"] = renewalInfo.willAutoRenew
+                                        } else {
+                                            statusResult["isAutoRenewing"] = true
+                                        }
                                     } else if status.state == .expired {
                                         statusResult["isAutoRenewing"] = false
                                         statusResult["purchaseState"] =
@@ -348,7 +356,13 @@ class IapPlugin {
             if let statuses = try? await product.subscription?.status {
                 for status in statuses {
                     if status.state == .subscribed {
-                        isAutoRenewing = true
+                        // `.subscribed` means the subscription is currently active, but a cancelled
+                        // (yet unexpired) subscription also has this state. Use willAutoRenew.
+                        if case .verified(let renewalInfo) = status.renewalInfo {
+                            isAutoRenewing = renewalInfo.willAutoRenew
+                        } else {
+                            isAutoRenewing = true
+                        }
                         break
                     }
                 }
