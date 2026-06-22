@@ -67,7 +67,7 @@ class IapPlugin {
                                 [
                                     "formattedPrice": introOffer.displayPrice,
                                     "priceCurrencyCode": getCurrencyCode(for: product),
-                                    "priceAmountMicros": 0,  // Not available in StoreKit 2
+                                    "priceAmountMicros": priceAmountMicros(introOffer.price),
                                     "billingPeriod": formatSubscriptionPeriod(introOffer.period),
                                     "billingCycleCount": introOffer.periodCount,
                                     "recurrenceMode": 0,
@@ -86,7 +86,7 @@ class IapPlugin {
                             [
                                 "formattedPrice": product.displayPrice,
                                 "priceCurrencyCode": getCurrencyCode(for: product),
-                                "priceAmountMicros": 0,
+                                "priceAmountMicros": priceAmountMicros(product.price),
                                 "billingPeriod": formatSubscriptionPeriod(
                                     subscription.subscriptionPeriod),
                                 "billingCycleCount": 0,
@@ -100,7 +100,7 @@ class IapPlugin {
                 }
             } else {
                 // One-time purchase
-                productDict["priceAmountMicros"] = 0  // Not available in StoreKit 2
+                productDict["priceAmountMicros"] = priceAmountMicros(product.price)
             }
 
             productsArray.append(productDict)
@@ -339,6 +339,10 @@ class IapPlugin {
             // Fallback for macOS 12: currency code not directly available
             return ""
         }
+    }
+
+    private func priceAmountMicros(_ decimal: Decimal) -> Int64 {
+        return NSDecimalNumber(decimal: decimal * 1_000_000).int64Value
     }
 
     private func createPurchaseObject(from verificationResult: VerificationResult<Transaction>, product: Product) async throws(FFIResult)
