@@ -10,8 +10,8 @@ use windows::core::{HSTRING, Interface};
 use windows::{
     Foundation::DateTime,
     Services::Store::{
-        StoreConsumableStatus, StoreContext, StoreDurationUnit, StoreLicense, StoreProduct,
-        StorePurchaseProperties, StorePurchaseStatus,
+        StoreConsumableStatus, StoreContext, StoreDurationUnit, StoreLicense, StorePrice,
+        StoreProduct, StorePurchaseProperties, StorePurchaseStatus,
     },
     Win32::UI::Shell::IInitializeWithWindow,
 };
@@ -62,6 +62,23 @@ fn iso_period(value: u32, unit: StoreDurationUnit) -> String {
         // Treat Month and any unknown value as month — matches the previous
         // default and the most common Microsoft Store subscription cadence.
         _ => format!("P{value}M"),
+    }
+}
+
+/// Read the post-trial recurring price from a `StorePrice`.
+///
+/// Microsoft Store collapses both `FormattedPrice` and `FormattedBasePrice`
+/// to `$0` / "Free" while a customer is trial-eligible; the genuine post-
+/// trial charge lives in `FormattedRecurrencePrice`. Fall back to
+/// `FormattedBasePrice` when no recurrence price is published (one-time
+/// products, or SKUs without an intro/trial), so the helper stays correct
+/// for non-subscription SKUs too.
+fn recurring_formatted_price(price: &StorePrice) -> windows::core::Result<String> {
+    let recurrence = price.FormattedRecurrencePrice()?.to_string();
+    if recurrence.trim().is_empty() {
+        Ok(price.FormattedBasePrice()?.to_string())
+    } else {
+        Ok(recurrence)
     }
 }
 
@@ -338,10 +355,10 @@ impl<R: Runtime> Iap<R> {
 
         let price = store_product.Price()?;
         let currency_code = price.CurrencyCode()?.to_string();
-        // Use the base (recurring) price so the displayed string and parsed
-        // micros agree even when the customer is currently eligible for a
-        // free trial or a sale price.
-        let product_formatted_price = price.FormattedBasePrice()?.to_string();
+        // Use the recurring (post-trial) price so the displayed string and
+        // parsed micros reflect the real subscription charge even when the
+        // customer is currently trial-eligible.
+        let product_formatted_price = recurring_formatted_price(&price)?;
         let product_price_micros = formatted_price_to_micros(&product_formatted_price);
 
         // For subscriptions, walk every SKU and build a SubscriptionOffer per
@@ -365,7 +382,7 @@ impl<R: Runtime> Iap<R> {
 
                 let sku_id = sku.StoreId()?.to_string();
                 let sku_price = sku.Price()?;
-                let sku_formatted = sku_price.FormattedBasePrice()?.to_string();
+                let sku_formatted = recurring_formatted_price(&sku_price)?;
                 let sku_micros = formatted_price_to_micros(&sku_formatted);
                 let sku_current_formatted = sku_price.FormattedPrice()?.to_string();
                 let sku_current_micros = formatted_price_to_micros(&sku_current_formatted);
