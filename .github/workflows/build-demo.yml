@@ -5,6 +5,9 @@ on:
   push:
     branches: ['**']
 
+permissions:
+  contents: read
+
 jobs:
   # Build the example app on every desktop OS. Catches platform-specific
   # regressions.
