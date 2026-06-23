@@ -65,14 +65,17 @@ fn iso_period(value: u32, unit: StoreDurationUnit) -> String {
     }
 }
 
-/// Read the post-trial recurring price from a `StorePrice`.
+/// Read the post-trial recurring price from a subscription `StorePrice`.
 ///
 /// Microsoft Store collapses both `FormattedPrice` and `FormattedBasePrice`
 /// to `$0` / "Free" while a customer is trial-eligible; the genuine post-
 /// trial charge lives in `FormattedRecurrencePrice`. Fall back to
-/// `FormattedBasePrice` when no recurrence price is published (one-time
-/// products, or SKUs without an intro/trial), so the helper stays correct
-/// for non-subscription SKUs too.
+/// `FormattedBasePrice` when no recurrence price is published (subscription
+/// SKUs without an intro/trial).
+///
+/// Call this **only for subscription products / SKUs**. On one-time
+/// purchases the Store returns a non-empty `$0`-style placeholder in
+/// `FormattedRecurrencePrice`, which would silently collapse the price to 0.
 fn recurring_formatted_price(price: &StorePrice) -> windows::core::Result<String> {
     let recurrence = price.FormattedRecurrencePrice()?.to_string();
     if recurrence.trim().is_empty() {
@@ -355,10 +358,17 @@ impl<R: Runtime> Iap<R> {
 
         let price = store_product.Price()?;
         let currency_code = price.CurrencyCode()?.to_string();
-        // Use the recurring (post-trial) price so the displayed string and
-        // parsed micros reflect the real subscription charge even when the
-        // customer is currently trial-eligible.
-        let product_formatted_price = recurring_formatted_price(&price)?;
+        // For subscriptions, use the recurring (post-trial) price so the
+        // displayed string and parsed micros reflect the real charge even
+        // when the customer is currently trial-eligible. For one-time
+        // products `FormattedRecurrencePrice` is not meaningful and the
+        // Store can return a non-empty `$0`-style placeholder there, so
+        // stick with `FormattedBasePrice`.
+        let product_formatted_price = if product_type == "subs" {
+            recurring_formatted_price(&price)?
+        } else {
+            price.FormattedBasePrice()?.to_string()
+        };
         let product_price_micros = formatted_price_to_micros(&product_formatted_price);
 
         // For subscriptions, walk every SKU and build a SubscriptionOffer per
