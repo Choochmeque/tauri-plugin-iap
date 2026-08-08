@@ -50,7 +50,7 @@ mod ffi {
         #[swift_bridge(Sendable)]
         type IapPlugin;
         #[swift_bridge(init, swift_name = "initPlugin")]
-        fn init_plugin() -> IapPlugin;
+        fn init_plugin(finishTransactionsAutomatically: bool) -> IapPlugin;
 
         async fn getProducts(
             &self,
@@ -62,8 +62,10 @@ mod ffi {
             productId: String,
             productType: String,
             offerToken: Option<String>,
+            appAccountToken: Option<String>,
         ) -> Result<String, FFIResult>;
         async fn restorePurchases(&self, productType: String) -> Result<String, FFIResult>;
+        async fn finishTransaction(&self, purchaseToken: String) -> Result<String, FFIResult>;
         async fn getProductStatus(
             &self,
             productId: String,
@@ -111,10 +113,11 @@ fn trigger(event: String, payload: String) -> Result<(), ffi::FFIResult> {
 pub fn init<R: Runtime, C: DeserializeOwned>(
     app: &AppHandle<R>,
     _api: &PluginApi<R, C>,
+    config: crate::Config,
 ) -> crate::Result<Iap<R>> {
     Ok(Iap {
         _app: app.clone(),
-        plugin: ffi::IapPlugin::init_plugin(),
+        plugin: ffi::IapPlugin::init_plugin(config.finish_transactions_automatically),
     })
 }
 
@@ -141,11 +144,18 @@ impl<R: Runtime> Iap<R> {
     pub async fn purchase(&self, payload: PurchaseRequest) -> crate::Result<Purchase> {
         validation::require_bundle()?;
 
+        // Destructured rather than `and_then`-ed twice: `options` is an
+        // `Option<PurchaseOptions>` and the first `and_then` would move it.
+        let (offer_token, app_account_token) = payload
+            .options
+            .map_or((None, None), |opts| (opts.offer_token, opts.app_account_token));
+
         self.plugin
             .purchase(
                 payload.product_id,
                 payload.product_type,
-                payload.options.and_then(|opts| opts.offer_token),
+                offer_token,
+                app_account_token,
             )
             .await
             .parse()
@@ -165,22 +175,33 @@ impl<R: Runtime> Iap<R> {
             .parse()
     }
 
-    /// No-op: macOS finishes transactions inside `purchase()` itself,
-    /// so there is nothing left to acknowledge here.
-    // `async` matches the cross-platform `Iap` contract — `commands.rs` `.await`s
-    // this on every platform, including ones that genuinely yield (Android).
-    #[allow(clippy::unused_async)]
-    pub async fn acknowledge_purchase(&self, _purchase_token: String) -> crate::Result<()> {
+    /// Finishes the transaction, telling `StoreKit` the entitlement has been
+    /// delivered and it can stop re-delivering it.
+    ///
+    /// With the default `finish_transactions_automatically(true)` the plugin has
+    /// already finished it, so this is a no-op — the Swift side treats an
+    /// unknown or already-finished token as success, which keeps the call
+    /// idempotent and safe to retry.
+    pub async fn acknowledge_purchase(&self, purchase_token: String) -> crate::Result<()> {
         validation::require_bundle()?;
-        Ok(())
+
+        self.plugin
+            .finishTransaction(purchase_token)
+            .await
+            .parse::<serde::de::IgnoredAny>()
+            .map(|_| ())
     }
 
-    /// No-op: macOS finishes transactions inside `purchase()` itself,
-    /// and `StoreKit` auto-allows re-purchase of consumables once finished.
-    #[allow(clippy::unused_async)]
-    pub async fn consume_purchase(&self, _purchase_token: String) -> crate::Result<()> {
+    /// Same as [`Self::acknowledge_purchase`]: for a consumable, finishing the
+    /// transaction is exactly what lets `StoreKit` sell it again.
+    pub async fn consume_purchase(&self, purchase_token: String) -> crate::Result<()> {
         validation::require_bundle()?;
-        Ok(())
+
+        self.plugin
+            .finishTransaction(purchase_token)
+            .await
+            .parse::<serde::de::IgnoredAny>()
+            .map(|_| ())
     }
 
     pub async fn get_product_status(

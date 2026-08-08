@@ -14,7 +14,23 @@ enum PurchaseStateValue: Int {
 class IapPlugin {
     private var updateListenerTask: Task<Void, Error>?
 
-    init() {
+    /// When false, the plugin never calls `Transaction.finish()` itself — the
+    /// host app must call `acknowledgePurchase` (or `consumePurchase`) once its
+    /// server has validated the receipt, the same contract Google Play imposes
+    /// on Android.
+    ///
+    /// Finishing eagerly is convenient but loses money on failure: a finished
+    /// transaction disappears from `Transaction.updates`, so a purchase whose
+    /// server-side verification failed leaves the customer charged with no
+    /// entitlement and no retry path except Restore.
+    private let finishTransactionsAutomatically: Bool
+
+    /// Exposes the setting to the tests without widening it for callers.
+    var finishesTransactionsAutomaticallyForTesting: Bool { finishTransactionsAutomatically }
+
+    init(finishTransactionsAutomatically: Bool = true) {
+        self.finishTransactionsAutomatically = finishTransactionsAutomatically
+
         // Start listening for transaction updates
         updateListenerTask = Task {
             for await update in Transaction.updates {
@@ -109,10 +125,36 @@ class IapPlugin {
         return try serializeToJSON(["products": productsArray])
     }
 
-    public func purchase(productId: RustString, productType: RustString, offerToken: RustString?)
+    public func purchase(
+        productId: RustString, productType: RustString, offerToken: RustString?,
+        appAccountToken: RustString?
+    )
         async throws(FFIResult) -> String
     {
         let id = productId.as_str().toString()
+
+        // Prepare purchase options.
+        //
+        // Validated BEFORE the product fetch so a malformed token fails
+        // immediately, without a StoreKit round trip, rather than after.
+        var purchaseOptions: Set<Product.PurchaseOption> = []
+
+        // Add appAccountToken if provided (must be a valid UUID). StoreKit
+        // copies it into the signed transaction as `appAccountToken`, which is
+        // what lets a server bind a receipt to the account that bought it —
+        // without it a stolen receipt can be redeemed by whoever presents it
+        // first. Rejecting a non-UUID here rather than dropping it silently
+        // matches iOS: a token that never reaches Apple is a token the server
+        // will never see, and a check that quietly stops running is worse than
+        // one that fails loudly.
+        if let appAccountToken = appAccountToken {
+            let token = appAccountToken.as_str().toString()
+            guard let uuid = UUID(uuidString: token) else {
+                throw FFIResult.Err(
+                    RustString("Invalid appAccountToken: must be a valid UUID string"))
+            }
+            purchaseOptions.insert(.appAccountToken(uuid))
+        }
 
         let products: [Product]
         do {
@@ -126,10 +168,13 @@ class IapPlugin {
             throw FFIResult.Err(RustString("Product not found"))
         }
 
-        // Initiate purchase
+        // Initiate purchase with options
         let result: Product.PurchaseResult
         do {
-            result = try await product.purchase()
+            result =
+                purchaseOptions.isEmpty
+                ? try await product.purchase()
+                : try await product.purchase(options: purchaseOptions)
         } catch {
             throw FFIResult.Err(RustString("Purchase failed: \(error.localizedDescription)"))
         }
@@ -138,8 +183,11 @@ class IapPlugin {
         case .success(let verification):
             switch verification {
             case .verified(let transaction):
-                // Finish the transaction
-                await transaction.finish()
+                // Only finish here when the host app has not taken over
+                // responsibility; see `finishTransactionsAutomatically`.
+                if finishTransactionsAutomatically {
+                    await transaction.finish()
+                }
 
                 let purchase = try await createPurchaseObject(from: verification, product: product)
                 return try serializeToJSON(purchase)
@@ -152,16 +200,58 @@ class IapPlugin {
             throw FFIResult.Err(RustString("Purchase cancelled by user"))
 
         case .pending:
-            throw FFIResult.Err(RustString("Purchase is pending"))
+            // NOT an error. `.pending` is Ask to Buy awaiting a parent's
+            // approval, or an SCA step-up at the bank — the purchase may still
+            // succeed, arriving later through `Transaction.updates`. Reporting
+            // it as a failure shows the buyer a red toast for something that is
+            // working as designed, so return a purchase in the `pending` state
+            // and let the caller decide how to word the wait.
+            return try serializeToJSON(pendingPurchaseObject(productId: id))
 
         @unknown default:
             throw FFIResult.Err(RustString("Unknown purchase result"))
         }
     }
 
+    /// Finishes a transaction the host app has taken responsibility for.
+    ///
+    /// Looked up in `Transaction.unfinished` rather than an in-memory map so it
+    /// still resolves after a relaunch — the case that matters, since an
+    /// unfinished transaction is re-delivered on the next launch and that is
+    /// precisely when the app retries a verification that failed earlier.
+    ///
+    /// An unknown token is treated as success: it means the transaction was
+    /// already finished, which is the state the caller asked for. Erroring
+    /// would make an ordinary retry look like a failure.
+    public func finishTransaction(purchaseToken: RustString) async throws(FFIResult) -> String {
+        let token = purchaseToken.as_str().toString()
+
+        for await result in Transaction.unfinished {
+            guard case .verified(let transaction) = result else { continue }
+            if String(transaction.id) == token {
+                await transaction.finish()
+                break
+            }
+        }
+
+        return try serializeToJSON(["finished": true])
+    }
+
     public func restorePurchases(productType: RustString) async throws(FFIResult) -> String {
         var purchases: [JsonObject] = []
         let requestedType = productType.as_str().toString()
+
+        // Ask the App Store to re-sync before reading entitlements. On a machine
+        // the customer has never launched the app on — or after signing in with
+        // a different Apple Account — `currentEntitlements` is empty until this
+        // runs, and "Restore Purchases did nothing" is a reliable App Review
+        // rejection. Apple requires this be user-initiated, which a Restore
+        // button is.
+        //
+        // A failure here is deliberately not fatal: `sync()` presents an App
+        // Store sign-in sheet, and a customer who dismisses it should still get
+        // whatever entitlements are already cached locally rather than an error.
+        try? await AppStore.sync()
 
         // Get all current entitlements
         for await result in Transaction.currentEntitlements {
@@ -299,13 +389,40 @@ class IapPlugin {
                 }
             }
 
-            // Always finish transactions
-            await transaction.finish()
+            // Finish only when the host app has not taken over. Leaving it
+            // unfinished is what makes the retry possible: StoreKit re-delivers
+            // it here on the next launch until someone acknowledges it.
+            if finishTransactionsAutomatically {
+                await transaction.finish()
+            }
 
         case .unverified(_, _):
             // Handle unverified transaction
             break
         }
+    }
+
+    /// A `Purchase` for a transaction that does not exist yet.
+    ///
+    /// `.pending` has no `Transaction` to describe — StoreKit hands one over
+    /// later, through `Transaction.updates`, if the purchase is approved. The
+    /// shape has to stay in sync with the `Purchase` struct in src/models.rs;
+    /// the ids are empty because there is genuinely nothing to identify yet.
+    // Not `private` so the tests can assert the shape without a StoreKit daemon.
+    func pendingPurchaseObject(productId: String) -> JsonObject {
+        return [
+            "orderId": "",
+            "originalId": "",
+            "packageName": Bundle.main.bundleIdentifier ?? "",
+            "productId": productId,
+            "purchaseTime": 0,
+            "purchaseToken": "",
+            "purchaseState": PurchaseStateValue.pending.rawValue,
+            "isAutoRenewing": false,
+            "isAcknowledged": false,
+            "originalJson": "",
+            "signature": "",
+        ]
     }
 
     private func serializeToJSON(_ object: JsonObject) throws(FFIResult) -> String {
@@ -392,6 +509,6 @@ class IapPlugin {
 }
 
 // Initialize the plugin
-func initPlugin() -> IapPlugin {
-    return IapPlugin()
+func initPlugin(finishTransactionsAutomatically: Bool = true) -> IapPlugin {
+    return IapPlugin(finishTransactionsAutomatically: finishTransactionsAutomatically)
 }
