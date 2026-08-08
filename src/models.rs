@@ -380,6 +380,40 @@ mod tests {
         assert!(json.contains(r#""priceAmountMicros":9990000"#));
     }
 
+    /// The exact JSON the macOS bridge emits for a `.pending` purchase (Ask to
+    /// Buy, SCA step-up) must deserialize into `Purchase`.
+    ///
+    /// The Swift side builds that dictionary by hand, so nothing but this test
+    /// connects the two: if a required field is dropped there, `.pending` stops
+    /// being a pending purchase and turns back into an opaque
+    /// `CannotDeserializeResponse` — the generic error the change was meant to
+    /// remove. Note there is no `jwsRepresentation`: a pending purchase has no
+    /// transaction to sign yet.
+    #[test]
+    fn test_pending_purchase_from_macos_bridge_deserializes() {
+        let json = r#"{
+            "orderId": "",
+            "originalId": "",
+            "packageName": "com.example.app",
+            "productId": "com.example.pro",
+            "purchaseTime": 0,
+            "purchaseToken": "",
+            "purchaseState": 2,
+            "isAutoRenewing": false,
+            "isAcknowledged": false,
+            "originalJson": "",
+            "signature": ""
+        }"#;
+
+        let purchase: Purchase =
+            serde_json::from_str(json).expect("macOS pending purchase must deserialize");
+
+        assert_eq!(purchase.purchase_state, PurchaseStateValue::Pending);
+        assert_eq!(purchase.product_id, "com.example.pro");
+        assert_eq!(purchase.jws_representation, None);
+        assert!(!purchase.is_acknowledged);
+    }
+
     #[test]
     fn test_purchase_serde_roundtrip() {
         let purchase = Purchase {
