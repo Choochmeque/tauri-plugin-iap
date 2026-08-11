@@ -214,16 +214,11 @@ jobs:
 
   test-ios:
     name: iOS Unit Tests
-    runs-on: macos-latest
+    runs-on: macos-15
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
-
-      - name: Select Xcode 26.5
-        uses: maxim-lobanov/setup-xcode@v1
-        with:
-          xcode-version: "26.5"
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
