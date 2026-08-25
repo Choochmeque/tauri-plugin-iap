@@ -169,7 +169,7 @@ impl<R: Runtime> Iap<R> {
     /// so there is nothing left to acknowledge here.
     // `async` matches the cross-platform `Iap` contract — `commands.rs` `.await`s
     // this on every platform, including ones that genuinely yield (Android).
-    #[allow(clippy::unused_async)]
+    #[allow(unknown_lints, clippy::unused_async, clippy::unused_async_trait_impl)]
     pub async fn acknowledge_purchase(&self, _purchase_token: String) -> crate::Result<()> {
         validation::require_bundle()?;
         Ok(())
@@ -177,7 +177,7 @@ impl<R: Runtime> Iap<R> {
 
     /// No-op: macOS finishes transactions inside `purchase()` itself,
     /// and `StoreKit` auto-allows re-purchase of consumables once finished.
-    #[allow(clippy::unused_async)]
+    #[allow(unknown_lints, clippy::unused_async, clippy::unused_async_trait_impl)]
     pub async fn consume_purchase(&self, _purchase_token: String) -> crate::Result<()> {
         validation::require_bundle()?;
         Ok(())

@@ -19,7 +19,12 @@ pub fn init<R: Runtime, C: DeserializeOwned>(
 /// Access to the iap APIs.
 pub struct Iap<R: Runtime>(AppHandle<R>);
 
-#[allow(clippy::unused_async, clippy::unused_self)]
+#[allow(
+    unknown_lints,
+    clippy::unused_async,
+    clippy::unused_async_trait_impl,
+    clippy::unused_self
+)]
 impl<R: Runtime> Iap<R> {
     pub async fn get_products(
         &self,

@@ -321,7 +321,7 @@ impl<R: Runtime> Iap<R> {
         Ok(products)
     }
 
-    #[allow(clippy::unused_async)]
+    #[allow(unknown_lints, clippy::unused_async, clippy::unused_async_trait_impl)]
     pub async fn get_products(
         &self,
         product_ids: Vec<String>,
@@ -476,7 +476,7 @@ impl<R: Runtime> Iap<R> {
         })
     }
 
-    #[allow(clippy::unused_async)]
+    #[allow(unknown_lints, clippy::unused_async, clippy::unused_async_trait_impl)]
     pub async fn purchase(&self, payload: PurchaseRequest) -> crate::Result<Purchase> {
         let context = self.get_store_context()?;
 
@@ -589,7 +589,7 @@ impl<R: Runtime> Iap<R> {
         Ok(purchase)
     }
 
-    #[allow(clippy::unused_async)]
+    #[allow(unknown_lints, clippy::unused_async, clippy::unused_async_trait_impl)]
     pub async fn restore_purchases(
         &self,
         request: RestorePurchasesRequest,
@@ -680,12 +680,17 @@ impl<R: Runtime> Iap<R> {
     }
 
     /// No-op: Microsoft Store auto-acknowledges purchases. Method exists for API parity.
-    #[allow(clippy::unused_async, clippy::unused_self)]
+    #[allow(
+        unknown_lints,
+        clippy::unused_async,
+        clippy::unused_async_trait_impl,
+        clippy::unused_self
+    )]
     pub async fn acknowledge_purchase(&self, _purchase_token: String) -> crate::Result<()> {
         Ok(())
     }
 
-    #[allow(clippy::unused_async)]
+    #[allow(unknown_lints, clippy::unused_async, clippy::unused_async_trait_impl)]
     pub async fn consume_purchase(&self, purchase_token: String) -> crate::Result<()> {
         let envelope = WindowsPurchaseTokenV1::decode(&purchase_token)?;
         let context = self.get_store_context()?;
@@ -712,7 +717,7 @@ impl<R: Runtime> Iap<R> {
         }
     }
 
-    #[allow(clippy::unused_async)]
+    #[allow(unknown_lints, clippy::unused_async, clippy::unused_async_trait_impl)]
     pub async fn get_product_status(
         &self,
         product_id: String,
