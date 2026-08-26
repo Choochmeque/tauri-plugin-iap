@@ -6,7 +6,6 @@ Default permissions for the plugin
 
 - `allow-register-listener`
 - `allow-remove-listener`
-- `allow-initialize`
 - `allow-get-products`
 - `allow-purchase`
 - `allow-restore-purchases`
@@ -150,32 +149,6 @@ Enables the get_purchase_history command without any pre-configured scope.
 <td>
 
 Denies the get_purchase_history command without any pre-configured scope.
-
-</td>
-</tr>
-
-<tr>
-<td>
-
-`iap:allow-initialize`
-
-</td>
-<td>
-
-Enables the initialize command without any pre-configured scope.
-
-</td>
-</tr>
-
-<tr>
-<td>
-
-`iap:deny-initialize`
-
-</td>
-<td>
-
-Denies the initialize command without any pre-configured scope.
 
 </td>
 </tr>

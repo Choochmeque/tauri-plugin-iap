@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
-  initialize,
   getProducts,
   purchase,
   restorePurchases,
@@ -33,17 +32,6 @@ describe("IAP Plugin", () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
-  });
-
-  describe("initialize", () => {
-    it("should reject with deprecation error", async () => {
-      const error = new Error(
-        "initialize() is deprecated and no longer needed. The billing client initializes automatically.",
-      );
-      vi.mocked(invoke).mockRejectedValue(error);
-
-      await expect(initialize()).rejects.toThrow("deprecated");
-    });
   });
 
   describe("getProducts", () => {

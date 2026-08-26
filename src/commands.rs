@@ -2,15 +2,10 @@ use tauri::{AppHandle, Runtime, command};
 
 use crate::models::{
     AcknowledgePurchaseRequest, ConsumePurchaseRequest, GetProductStatusRequest,
-    GetProductsRequest, GetProductsResponse, InitializeResponse, ProductStatus, Purchase,
-    PurchaseRequest, RestorePurchasesRequest, RestorePurchasesResponse,
+    GetProductsRequest, GetProductsResponse, ProductStatus, Purchase, PurchaseRequest,
+    RestorePurchasesRequest, RestorePurchasesResponse,
 };
 use crate::{IapExt, Result};
-
-#[command]
-pub async fn initialize<R: Runtime>(_app: AppHandle<R>) -> Result<InitializeResponse> {
-    Err(std::io::Error::other("initialize() is deprecated and no longer needed. The billing client initializes automatically.").into())
-}
 
 #[command]
 pub async fn get_products<R: Runtime>(

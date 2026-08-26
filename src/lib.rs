@@ -47,7 +47,6 @@ impl<R: Runtime, T: Manager<R>> crate::IapExt<R> for T {
 pub fn init<R: Runtime>() -> TauriPlugin<R> {
     Builder::new("iap")
         .invoke_handler(tauri::generate_handler![
-            commands::initialize,
             commands::get_products,
             commands::purchase,
             commands::restore_purchases,

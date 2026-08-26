@@ -282,11 +282,6 @@ app.iap().acknowledge_purchase(purchase_result.purchase_token).await?;
 
 ## API Reference
 
-### `initialize()` *(Deprecated)*
-> **Deprecated**: This function is no longer needed and will be removed in a future major release. The billing client is now initialized automatically when the plugin loads.
-
-Returns `{ success: true }` for backward compatibility.
-
 ### `getProducts(productIds: string[], productType: 'subs' | 'inapp')`
 Fetches product details from the store.
 

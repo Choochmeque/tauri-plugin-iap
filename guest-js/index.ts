@@ -5,13 +5,6 @@ import {
 } from "@tauri-apps/api/core";
 
 /**
- * Response from IAP initialization
- */
-export interface InitializeResponse {
-  success: boolean;
-}
-
-/**
  * Represents a pricing phase for subscription products
  */
 export interface PricingPhase {
@@ -204,16 +197,6 @@ export interface PurchaseOptions {
    * identity-bind the purchase.
    */
   publisherUserId?: string;
-}
-
-/**
- * Initialize the IAP plugin.
- *
- * @deprecated This function is no longer needed. The billing client is now initialized automatically when the plugin loads. This function will be removed in the next major release.
- * @returns Promise resolving to `{ success: true }` for backward compatibility
- */
-export async function initialize(): Promise<InitializeResponse> {
-  return await invoke<InitializeResponse>("plugin:iap|initialize");
 }
 
 /**

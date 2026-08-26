@@ -1,11 +1,5 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Default, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct InitializeResponse {
-    pub success: bool,
-}
-
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GetProductsRequest {
@@ -306,24 +300,6 @@ mod tests {
                 .expect("Failed to deserialize PurchaseStateValue");
             assert_eq!(state, deserialized);
         }
-    }
-
-    #[test]
-    fn test_initialize_response_default() {
-        let response = InitializeResponse::default();
-        assert!(!response.success);
-    }
-
-    #[test]
-    fn test_initialize_response_serde() {
-        let response = InitializeResponse { success: true };
-        let json =
-            serde_json::to_string(&response).expect("Failed to serialize InitializeResponse");
-        assert_eq!(json, r#"{"success":true}"#);
-
-        let deserialized: InitializeResponse =
-            serde_json::from_str(&json).expect("Failed to deserialize InitializeResponse");
-        assert!(deserialized.success);
     }
 
     #[test]
