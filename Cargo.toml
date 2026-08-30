@@ -25,7 +25,7 @@ swift-bridge = { version = "0.1", features = ["async"] }
 [target.'cfg(target_os = "windows")'.dependencies]
 base64 = "0.23"
 nt-time = { version = "0.15", default-features = false, features = ["std"] }
-windows = { version = "0.61", features = [
+windows = { version = "0.62", features = [
     "Foundation",
     "Foundation_Collections",
     "Services_Store",
