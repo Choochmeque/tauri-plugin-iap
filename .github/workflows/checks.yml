@@ -3,119 +3,20 @@ name: Checks
 on:
   pull_request:
   push:
-    branches: ['**']
-
-permissions:
-  contents: read
+    branches: [main]
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # Superseded runs cancel per workflow+ref; main is pinned to a unique group
+  # (run_id) so every commit on main gets its own uncancellable verification run.
+  group: ${{ github.workflow }}-${{ github.ref == 'refs/heads/main' && github.run_id || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
-  # Code formatting.
-  fmt:
-    name: cargo-fmt
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@stable
-      - run: cargo fmt --all -- --check
-
-  prettier:
-    name: prettier
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6
-        with:
-          run_install: false
-      - uses: actions/setup-node@v7
-        with:
-          node-version: "24"
-          cache: "pnpm"
-      - run: pnpm install
-      - run: pnpm run format:check
-
-  # Static analyzer.
-  clippy:
-    name: cargo-clippy (${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-    steps:
-      - uses: awalsh128/cache-apt-pkgs-action@latest
-        if: matrix.os == 'ubuntu-latest'
-        with:
-          packages: libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf llvm-dev clang cmake grcov
-          version: "1.0"  # bump this to invalidate the cache when needed
-
-      - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@stable
-      - run: cargo clippy --all-targets --all-features -- -D warnings -D clippy::unwrap_used
-
-  # Static analyzer for mobile targets.
-  clippy-mobile:
-    name: cargo-clippy (${{ matrix.target }})
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        include:
-          - target: aarch64-linux-android
-            os: ubuntu-latest
-          - target: aarch64-apple-ios
-            os: macos-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ matrix.target }}
-      - run: cargo clippy --lib --target ${{ matrix.target }} -- -D warnings -D clippy::unwrap_used
-
-  # Check links in the documentation.
-  deadlinks:
-    name: cargo-deadlinks
-    runs-on: ubuntu-latest
-    steps:
-      - uses: awalsh128/cache-apt-pkgs-action@latest
-        with:
-          packages: libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf llvm-dev clang cmake grcov
-          version: "1.0"  # bump this to invalidate the cache when needed
-
-      - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@stable
-      - run: cargo install cargo-deadlinks
-      - run: cargo doc --no-deps -p tauri-plugin-iap
-      - run: cargo deadlinks --no-build
-
-  # Check links in markdown files.
-  mlc:
-    name: mlc
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: becheran/mlc@v1
-
-  # cargo-deny.
-  deny:
-    name: cargo-deny
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: EmbarkStudios/cargo-deny-action@v2
-
-  # cargo-semver.
-  semver:
-    name: cargo-semver
-    runs-on: ubuntu-latest
-    steps:
-      - uses: awalsh128/cache-apt-pkgs-action@latest
-        with:
-          packages: libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf llvm-dev clang cmake grcov
-          version: "1.0"  # bump this to invalidate the cache when needed
-
-      - uses: actions/checkout@v7
-      - uses: obi1kenobi/cargo-semver-checks-action@v2
-
-  
+  checks:
+    permissions:
+      contents: read
+      pull-requests: read
+    uses: Choochmeque/reusable-actions/.github/workflows/checks.yml@v1
+    with:
+      clippy-matrix: '[{"name": "default", "flags": ""}]'
+    secrets: inherit
