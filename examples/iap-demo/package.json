@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@tauri-apps/api": "^2.11.1",
-    "tauri-plugin-iap-api": "file:../../"
+    "tauri-plugin-iap-api": "file:../.."
   },
   "devDependencies": {
     "@choochmeque/tauri-macos-xcode": "^0.2.30",
