@@ -16,25 +16,25 @@ importers:
         version: '@choochmeque/tauri-plugin-iap-api@file:../..'
     devDependencies:
       '@choochmeque/tauri-macos-xcode':
-        specifier: ^0.2.30
-        version: 0.2.30
+        specifier: ^0.2.32
+        version: 0.2.32
       '@sveltejs/vite-plugin-svelte':
         specifier: ^7.1.2
-        version: 7.3.0(svelte@5.56.10(@typescript-eslint/types@8.57.0))(vite@8.2.2(esbuild@0.27.2))
+        version: 7.3.0(svelte@5.57.0(@typescript-eslint/types@8.57.0))(vite@8.2.2(esbuild@0.27.2))
       '@tauri-apps/cli':
         specifier: ^2.11.4
         version: 2.11.4
       svelte:
         specifier: ^5.56.10
-        version: 5.56.10(@typescript-eslint/types@8.57.0)
+        version: 5.57.0(@typescript-eslint/types@8.57.0)
       vite:
         specifier: ^8.2.1
         version: 8.2.2(esbuild@0.27.2)
 
 packages:
 
-  '@choochmeque/tauri-macos-xcode@0.2.30':
-    resolution: {integrity: sha512-9y9om/E7pargYIR9UKYnHvDxA1Oh+YczB7huyj5stsp2E0jd4ad9JHJSf48CGFVATfa5dmfmQxUiI6f6zDJPiA==}
+  '@choochmeque/tauri-macos-xcode@0.2.32':
+    resolution: {integrity: sha512-PXQx0f0gCtLraH5lZU1Cj94oV2ZLO7ddIpg/LUHfOFUq0cwaFD3ELOjusBN17PM1ZuYWYCnzZPUg8btJeStVDg==}
     hasBin: true
 
   '@choochmeque/tauri-plugin-iap-api@file:../..':
@@ -397,9 +397,6 @@ packages:
   '@types/estree@1.0.9':
     resolution: {integrity: sha512-GhdPgy1el4/ImP05X05Uw4cw2/M93BCUmnEvWZNStlCzEKME4Fkk+YpoA5OiHNQmoS7Cafb8Xa3Pya8m1Qrzeg==}
 
-  '@types/trusted-types@2.0.7':
-    resolution: {integrity: sha512-ScaPdn1dQczgbl0QFTeTOmVHFULt394XJgOQNoyVhZ6r2vLnMLJfBPd53SB52T/3G36VI1/g2MZaX0cwDuXsfw==}
-
   '@typescript-eslint/types@8.57.0':
     resolution: {integrity: sha512-dTLI8PEXhjUC7B9Kre+u0XznO696BhXcTlOn0/6kf1fHaQW8+VjJAVHJ3eTI14ZapTxdkOmc80HblPQLaEeJdg==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
@@ -428,8 +425,8 @@ packages:
   binary-search@1.3.6:
     resolution: {integrity: sha512-nbE1WxOTTrUWIfsfZ4aHGYu5DOuNkbxGokjV6Z2kxfJK3uaAb8zNK1muzOeipoLHZjInT4Br88BHpzevc681xA==}
 
-  bresenham-zingl@0.2.5:
-    resolution: {integrity: sha512-0TCrPvavRM/3Os9QIUDhe8jpAQXgEYjsVO+9IKnkC8cdzorDX5fMRfr3neEFGjcfRItEswHvIvPrqQzCalRYkw==}
+  bresenham-zingl@0.2.8:
+    resolution: {integrity: sha512-AaC4k7+pHgbzlK4fb+l3/fXJd1CbQwhqE5oIoLaknVojyXQv79einSR+fWLR1yCJWOh46v+lLsFRMxHlea8Q5A==}
 
   cheminfo-types@1.15.0:
     resolution: {integrity: sha512-shv45WN2u0yN9EHH1bisNrv+fy4Cw+eLM5lOoriP67mePrwbHZ1kJqg90C8GEU7K1A8gJsicEoVZHcuBbuul/w==}
@@ -438,8 +435,8 @@ packages:
     resolution: {integrity: sha512-eYm0QWBtUrBWZWG0d386OGAw16Z995PiOVo2B7bjWSbHedGl5e0ZWaq65kOGgUSNesEIDkB9ISbTg/JK9dhCZA==}
     engines: {node: '>=6'}
 
-  colord@2.9.3:
-    resolution: {integrity: sha512-jeC1axXpnb0/2nn/Y1LPuLdgXBLH7aDcHu4KEKfqw3CUhX7ZpfBSlPKyqXE6btIgEzfWtrX3/tyBCaCvXvMkOw==}
+  colord@2.10.0:
+    resolution: {integrity: sha512-AidJptpBJmjTclAp9BkLwJi0T93fo5epJnbaZslpg6QVzpHjAiveF55mE9AcUJiGMqRHgMDY8soMsQtuNYMHfw==}
 
   commander@15.0.0:
     resolution: {integrity: sha512-z67u4ZhzCL/Tydu1lJARtEZYWbWaN7oYLHbsuzocr6y4N6WZAagG3RQ4FW61V1/0+jImpj293XfrcYnd1qxtPg==}
@@ -527,8 +524,8 @@ packages:
     resolution: {integrity: sha512-vK9P5/iUfdl95AI+JVyUuIcVtd4ofvtrOr3HNtM2yxC9bnMbEdp3x01OhQNnjb8IJYi38VlTE3mBXwcfvywuSw==}
     engines: {node: '>= 14'}
 
-  image-js@1.6.1:
-    resolution: {integrity: sha512-lLhyJCj7Ip5I0nJLYlsir1SBlDJACracpcMkZtRN+FnrS1eN3SHD0F2Yb7kmfVxCp3EV9EcMyCXFfKCjHLRTEw==}
+  image-js@1.7.0:
+    resolution: {integrity: sha512-/i72uwbYaSetVaLYPi3lHqr71/4O5RqWkEq4h/p5DM3FR0SSe5Jj57u6xk6sMVOurDBmTrvbm+FeinKnqLwIMA==}
 
   image-type@4.1.0:
     resolution: {integrity: sha512-CFJMJ8QK8lJvRlTCEgarL4ro6hfDQKif2HjSvYCdQZESaIPV4v9imrf7BQHK+sQeTeNeMpWciR9hyC/g8ybXEg==}
@@ -652,8 +649,8 @@ packages:
   ml-convolution@2.0.0:
     resolution: {integrity: sha512-ExW6zVmN2YGuyO3aBiS1ymybme3nVgv2ccCfynSdgtW5sNp4DOHnfow4K/ErTDMQ1s9tINjv7kvzjnVhQHXJBA==}
 
-  ml-matrix@6.12.2:
-    resolution: {integrity: sha512-GC+BnW+pBh8Auap8goAxY0senAmF0IEoc3HNVSfnfbvGw0buuDIYb9kAKMS1l+GiwJ1rfK2bzJ8IHhwjzATSFA==}
+  ml-matrix@6.15.0:
+    resolution: {integrity: sha512-wFa1v6KP8bKp+fj0nYmRs1Pb5K4zRkXGKsOvLinvILENFIADncm4XlOI+S1M7yuACMGfI6cfk0IifDgd4j5xmw==}
 
   ml-random@0.5.0:
     resolution: {integrity: sha512-zLJBmNb34LOz+vN6BD8l3aYm/VWYWbmAunrLMPs4dHf4gTl8BWlhil72j56HubPg86zrXioIs4qoHq7Topy6tw==}
@@ -670,8 +667,8 @@ packages:
   ml-regression-polynomial-2d@1.0.0:
     resolution: {integrity: sha512-r34kaawZKMwjORIdzpa/o5fnjlTXkkaLJ3B4vvFNeKlvEGPtApqFxbDRmw07e2CjUH2MhGIChpMeXp/XB3Iogg==}
 
-  ml-spectra-processing@14.29.0:
-    resolution: {integrity: sha512-825CS864krbjMv7OB0mbjgAmyOL5ymj1OGa0gAzz1h1Dcd3Eeol2DaOimSiPYmRhW+iYhpeQnb7cSU0mlSK6+g==}
+  ml-spectra-processing@14.34.0:
+    resolution: {integrity: sha512-sNM3nOg7s4tyinRnU5FyYZFV//cPHMvjwfxQvFh3GyrvWNuZmPIZTPS+kiT/SPXMymxA4+qx8oFSZ9K03clGyQ==}
 
   ml-xsadd@2.0.0:
     resolution: {integrity: sha512-VoAYUqmPRmzKbbqRejjqceGFp3VF81Qe8XXFGU0UXLxB7Mf4GGvyGq5Qn3k4AiQgDEV6WzobqlPOd+j0+m6IrA==}
@@ -701,6 +698,10 @@ packages:
 
   picomatch@4.0.5:
     resolution: {integrity: sha512-RvwwcruNjI1ncT5xRakeyS9Lf8lcItv34KD+aif+VH9kduAyfYBipGh12274xtenIPZ119/R9BdTBa8gAwSh0A==}
+    engines: {node: '>=12'}
+
+  picomatch@4.0.7:
+    resolution: {integrity: sha512-qcJu88Q2IWqJsDD529JKMdwGm/dvInW4HvQnRwiH9JtihJvzGOscDtHE3x1pBKeUOTysQ8kVmLnJ2kJu7yhcGA==}
     engines: {node: '>=12'}
 
   plist@5.0.0:
@@ -744,8 +745,8 @@ packages:
   string-split-by@1.0.0:
     resolution: {integrity: sha512-KaJKY+hfpzNyet/emP81PJA9hTVSfxNLS9SFTWxdCnnW1/zOOwiV248+EfoX7IQFcBaOp4G5YE6xTJMF+pLg6A==}
 
-  svelte@5.56.10:
-    resolution: {integrity: sha512-Lcxbj8I/KAbpY+VjtY4ENQBV0dDCipfGAhqb51XQZ67CIQqXgsv/8dPkbILaj4Fb6/b6JAEM/PIVbILXgDQy2g==}
+  svelte@5.57.0:
+    resolution: {integrity: sha512-NdbDn7fl4be1ViUG0oq/lvG6OZy3oENolV2ONjiqqsfVoeAfzaQAKUcEX3MrQod/Bebv1PgwET9rfXhgn9s4Kg==}
     engines: {node: '>=18'}
 
   tiff@7.1.3:
@@ -827,10 +828,10 @@ packages:
 
 snapshots:
 
-  '@choochmeque/tauri-macos-xcode@0.2.30':
+  '@choochmeque/tauri-macos-xcode@0.2.32':
     dependencies:
       commander: 15.0.0
-      image-js: 1.6.1
+      image-js: 1.7.0
       plist: 5.0.0
       tinyglobby: 0.2.17
     transitivePeerDependencies:
@@ -991,12 +992,12 @@ snapshots:
     dependencies:
       acorn: 8.18.0
 
-  '@sveltejs/vite-plugin-svelte@7.3.0(svelte@5.56.10(@typescript-eslint/types@8.57.0))(vite@8.2.2(esbuild@0.27.2))':
+  '@sveltejs/vite-plugin-svelte@7.3.0(svelte@5.57.0(@typescript-eslint/types@8.57.0))(vite@8.2.2(esbuild@0.27.2))':
     dependencies:
       deepmerge: 4.3.1
       magic-string: 1.1.0
       obug: 2.1.1
-      svelte: 5.56.10(@typescript-eslint/types@8.57.0)
+      svelte: 5.57.0(@typescript-eslint/types@8.57.0)
       vite: 8.2.2(esbuild@0.27.2)
       vitefu: 1.1.3(vite@8.2.2(esbuild@0.27.2))
 
@@ -1051,8 +1052,6 @@ snapshots:
 
   '@types/estree@1.0.9': {}
 
-  '@types/trusted-types@2.0.7': {}
-
   '@typescript-eslint/types@8.57.0':
     optional: true
 
@@ -1069,13 +1068,13 @@ snapshots:
 
   binary-search@1.3.6: {}
 
-  bresenham-zingl@0.2.5: {}
+  bresenham-zingl@0.2.8: {}
 
   cheminfo-types@1.15.0: {}
 
   clsx@2.1.1: {}
 
-  colord@2.9.3: {}
+  colord@2.10.0: {}
 
   commander@15.0.0: {}
 
@@ -1142,9 +1141,9 @@ snapshots:
       fflate: 0.8.3
       iobuffer: 6.0.1
 
-  fdir@6.5.0(picomatch@4.0.5):
+  fdir@6.5.0(picomatch@4.0.7):
     optionalDependencies:
-      picomatch: 4.0.5
+      picomatch: 4.0.7
 
   fflate@0.8.3: {}
 
@@ -1166,10 +1165,10 @@ snapshots:
       - supports-color
     optional: true
 
-  image-js@1.6.1:
+  image-js@1.7.0:
     dependencies:
-      bresenham-zingl: 0.2.5
-      colord: 2.9.3
+      bresenham-zingl: 0.2.8
+      colord: 2.10.0
       fast-bmp: 4.0.1
       fast-jpeg: 3.0.1
       fast-png: 8.0.0
@@ -1179,11 +1178,11 @@ snapshots:
       median-quickselect: 1.0.1
       ml-affine-transform: 1.0.3
       ml-convolution: 2.0.0
-      ml-matrix: 6.12.2
+      ml-matrix: 6.15.0
       ml-ransac: 1.0.0
       ml-regression-multivariate-linear: 2.0.4
       ml-regression-polynomial-2d: 1.0.0
-      ml-spectra-processing: 14.29.0
+      ml-spectra-processing: 14.34.0
       robust-point-in-polygon: 1.0.3
       ssim.js: 3.5.0
       tiff: 7.1.3
@@ -1276,7 +1275,7 @@ snapshots:
 
   ml-affine-transform@1.0.3:
     dependencies:
-      ml-matrix: 6.12.2
+      ml-matrix: 6.15.0
 
   ml-array-max@2.0.0:
     dependencies:
@@ -1302,7 +1301,7 @@ snapshots:
       fft.js: 4.0.4
       next-power-of-two: 1.0.0
 
-  ml-matrix@6.12.2:
+  ml-matrix@6.15.0:
     dependencies:
       is-any-array: 3.0.0
       ml-array-rescale: 2.0.0
@@ -1314,7 +1313,7 @@ snapshots:
   ml-ransac@1.0.0:
     dependencies:
       ml-array-median: 1.1.6
-      ml-matrix: 6.12.2
+      ml-matrix: 6.15.0
       ml-random: 0.5.0
 
   ml-regression-base@4.0.1:
@@ -1324,22 +1323,22 @@ snapshots:
 
   ml-regression-multivariate-linear@2.0.4:
     dependencies:
-      ml-matrix: 6.12.2
+      ml-matrix: 6.15.0
 
   ml-regression-polynomial-2d@1.0.0:
     dependencies:
       cheminfo-types: 1.15.0
       is-any-array: 2.0.1
-      ml-matrix: 6.12.2
+      ml-matrix: 6.15.0
       ml-regression-base: 4.0.1
 
-  ml-spectra-processing@14.29.0:
+  ml-spectra-processing@14.34.0:
     dependencies:
       binary-search: 1.3.6
       cheminfo-types: 1.15.0
       fft.js: 4.0.4
       is-any-array: 3.0.0
-      ml-matrix: 6.12.2
+      ml-matrix: 6.15.0
       ml-xsadd: 3.0.1
 
   ml-xsadd@2.0.0: {}
@@ -1361,6 +1360,8 @@ snapshots:
   picocolors@1.1.1: {}
 
   picomatch@4.0.5: {}
+
+  picomatch@4.0.7: {}
 
   plist@5.0.0:
     dependencies:
@@ -1434,13 +1435,12 @@ snapshots:
       parenthesis: 3.1.8
     optional: true
 
-  svelte@5.56.10(@typescript-eslint/types@8.57.0):
+  svelte@5.57.0(@typescript-eslint/types@8.57.0):
     dependencies:
       '@jridgewell/remapping': 2.3.5
       '@jridgewell/sourcemap-codec': 1.5.5
       '@sveltejs/acorn-typescript': 1.0.13(acorn@8.18.0)
       '@types/estree': 1.0.9
-      '@types/trusted-types': 2.0.7
       acorn: 8.18.0
       aria-query: 5.3.1
       axobject-query: 4.1.0
@@ -1462,8 +1462,8 @@ snapshots:
 
   tinyglobby@0.2.17:
     dependencies:
-      fdir: 6.5.0(picomatch@4.0.5)
-      picomatch: 4.0.5
+      fdir: 6.5.0(picomatch@4.0.7)
+      picomatch: 4.0.7
 
   ts-pattern@5.9.0: {}
 
