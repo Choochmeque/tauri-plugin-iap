@@ -100,6 +100,9 @@ jobs:
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v4
+        with:
+          # Default "tools platform-tools" requests the retired `tools` package
+          packages: platform-tools
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -158,6 +161,9 @@ jobs:
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v4
+        with:
+          # Default "tools platform-tools" requests the retired `tools` package
+          packages: platform-tools
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
