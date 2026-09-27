@@ -81,7 +81,7 @@ fn compile_swift() {
         ]);
 
     if is_release_build() {
-        cmd.args(["-c", "release"]);
+        cmd.args(["-c", "release", "-Xswiftc", "-enable-testing"]);
     }
 
     let exit_status = cmd
@@ -167,13 +167,84 @@ fn swift_target_triple() -> String {
 }
 
 #[cfg(target_os = "macos")]
+fn swift_bin_path() -> Option<PathBuf> {
+    let mut cmd = Command::new("swift");
+    cmd.current_dir(manifest_dir().join("macos"))
+        .arg("build")
+        .args([
+            "--scratch-path",
+            swift_build_dir()
+                .to_str()
+                .expect("Swift build path must be valid UTF-8"),
+        ])
+        .args(["--triple", &swift_target_triple()])
+        .arg("--show-bin-path");
+
+    if is_release_build() {
+        cmd.args(["-c", "release"]);
+    }
+
+    let output = cmd.output().ok()?;
+    if output.status.success() {
+        let path_str = String::from_utf8(output.stdout).ok()?;
+        let path = PathBuf::from(path_str.trim());
+        if path.join("libtauri-plugin-iap.a").exists() {
+            return Some(path);
+        }
+    }
+    None
+}
+
+#[cfg(target_os = "macos")]
 fn swift_library_static_lib_dir() -> PathBuf {
+    // 1. Resolve directly from the current SwiftPM invocation
+    if let Some(bin_path) = swift_bin_path() {
+        return bin_path;
+    }
+
     let debug_or_release = if is_release_build() {
         "release"
     } else {
         "debug"
     };
 
+    let products_subdir = if is_release_build() {
+        "Release"
+    } else {
+        "Debug"
+    };
+
     let arch_dir = format!("{}-apple-macosx", swift_arch());
-    swift_build_dir().join(format!("{arch_dir}/{debug_or_release}"))
+
+    // 2. Prioritize modern SwiftPM layouts over legacy layouts
+    let candidates = [
+        swift_build_dir().join("out/Products").join(products_subdir),
+        swift_build_dir().join(debug_or_release),
+        swift_build_dir().join(format!("{arch_dir}/{debug_or_release}")),
+    ];
+
+    // 3. If multiple candidates exist, select the newest artifact to prevent stale caches
+    let mut newest_candidate: Option<(PathBuf, std::time::SystemTime)> = None;
+
+    for candidate in &candidates {
+        let lib_path = candidate.join("libtauri-plugin-iap.a");
+        if let Ok(metadata) = std::fs::metadata(&lib_path) {
+            let mtime = metadata
+                .modified()
+                .unwrap_or(std::time::SystemTime::UNIX_EPOCH);
+            match &newest_candidate {
+                None => newest_candidate = Some((candidate.clone(), mtime)),
+                Some((_, best_mtime)) if mtime > *best_mtime => {
+                    newest_candidate = Some((candidate.clone(), mtime));
+                }
+                _ => {}
+            }
+        }
+    }
+
+    if let Some((best_path, _)) = newest_candidate {
+        return best_path;
+    }
+
+    candidates[0].clone()
 }
