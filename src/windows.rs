@@ -238,11 +238,11 @@ impl<R: Runtime> Iap<R> {
         let key = if product_type == "subs" {
             context
                 .GetCustomerPurchaseIdAsync(&ticket, &user_id)
-                .and_then(|op| op.get())?
+                .and_then(|op| op.join())?
         } else {
             context
                 .GetCustomerCollectionsIdAsync(&ticket, &user_id)
-                .and_then(|op| op.get())?
+                .and_then(|op| op.join())?
         };
         Ok(key.to_string())
     }
@@ -300,7 +300,7 @@ impl<R: Runtime> Iap<R> {
 
         let query_result = context
             .GetAssociatedStoreProductsAsync(&product_kinds)
-            .and_then(|async_op| async_op.get())?;
+            .and_then(|async_op| async_op.join())?;
 
         let extended_error = query_result.ExtendedError()?;
         if extended_error.is_err() {
@@ -512,11 +512,11 @@ impl<R: Runtime> Iap<R> {
                     &HSTRING::from(store_id.as_str()),
                     &properties,
                 )
-                .and_then(|async_op| async_op.get())?
+                .and_then(|async_op| async_op.join())?
         } else {
             context
                 .RequestPurchaseAsync(&HSTRING::from(store_id.as_str()))
-                .and_then(|async_op| async_op.get())?
+                .and_then(|async_op| async_op.join())?
         };
 
         let status = purchase_result.Status()?;
@@ -599,7 +599,7 @@ impl<R: Runtime> Iap<R> {
         // Get app license info
         let app_license = context
             .GetAppLicenseAsync()
-            .and_then(|async_op| async_op.get())?;
+            .and_then(|async_op| async_op.join())?;
 
         // Microsoft issues one Store ID key per user that covers every
         // subscription / IAP, so mint it once and stamp it onto every
@@ -699,7 +699,7 @@ impl<R: Runtime> Iap<R> {
 
         let result = context
             .ReportConsumableFulfillmentAsync(&store_id, 1u32, tracking_id)
-            .and_then(|async_op| async_op.get())?;
+            .and_then(|async_op| async_op.join())?;
 
         match result.Status()? {
             StoreConsumableStatus::Succeeded => Ok(()),
@@ -728,7 +728,7 @@ impl<R: Runtime> Iap<R> {
         // Get app license to check ownership
         let app_license = context
             .GetAppLicenseAsync()
-            .and_then(|async_op| async_op.get())?;
+            .and_then(|async_op| async_op.join())?;
 
         let addon_licenses = app_license.AddOnLicenses()?;
 
