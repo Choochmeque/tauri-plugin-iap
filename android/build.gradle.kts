@@ -7,7 +7,7 @@ plugins {
 
 android {
     namespace = "app.tauri.iap"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         minSdk = 23
