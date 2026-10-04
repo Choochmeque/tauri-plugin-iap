@@ -293,6 +293,42 @@ jobs:
       - name: Build macOS bindings
         run: cargo build --target aarch64-apple-darwin
 
+      # The swiftbuild backend lays its products out differently and is the
+      # default on newer toolchains, so keep that path covered. Release,
+      # because that is the configuration whose symbol visibility differs.
+      - name: Build macOS bindings (swiftbuild backend)
+        env:
+          TAURI_PLUGIN_SWIFT_BUILD_SYSTEM: swiftbuild
+        run: cargo build --release --target aarch64-apple-darwin
+
+      # An rlib build cannot fail on undefined symbols, so assert directly that
+      # the archive we hand the linker still exports every swift-bridge entry
+      # point. This is the check for the release symbol-visibility regression.
+      - name: Check swift-bridge symbols are exported
+        run: |
+          set -euo pipefail
+          # Ask the build script which directory it put on the link path rather
+          # than guessing a layout: a stale archive from an earlier backend can
+          # still be on disk without being linked.
+          out=$(ls -t target/aarch64-apple-darwin/release/build/tauri-plugin-iap-*/output | head -1)
+          dir=$(grep -h 'rustc-link-search=native=' "$out" | tail -1 | sed 's/.*native=//')
+          lib="$dir/libtauri-plugin-iap.a"
+          if [ ! -f "$lib" ]; then echo "no archive at $lib"; exit 1; fi
+          echo "checking $lib"
+          nm -gU -arch arm64 "$lib" > exported.txt
+          grep -rhoE '@_cdecl\("[^"]+"\)' macos/Sources/generated --include='*.swift' \
+            | sed 's/@_cdecl("//; s/")//' | sort -u > expected.txt
+          count=$(wc -l < expected.txt | tr -d " ")
+          if [ "$count" -eq 0 ]; then echo "no @_cdecl entry points found - generator changed?"; exit 1; fi
+          missing=0
+          while IFS= read -r name; do
+            if ! grep -F " T _$name" exported.txt > /dev/null; then
+              echo "missing export: $name"; missing=1
+            fi
+          done < expected.txt
+          if [ "$missing" -ne 0 ]; then exit 1; fi
+          echo "all $count swift-bridge entry points exported"
+
       - name: Run macOS unit tests
         run: |
           cd macos
