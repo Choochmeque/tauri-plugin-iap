@@ -278,8 +278,15 @@ jobs:
           path: ios/coverage.json
 
   test-macos:
-    name: macOS Unit Tests
-    runs-on: macos-latest
+    name: macOS Unit Tests (${{ matrix.runs-on }})
+    runs-on: ${{ matrix.runs-on }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # macos-latest still defaults to SwiftPM's native backend; xcode-27
+        # defaults to swiftbuild. Both write a static archive, in different
+        # places, so running both keeps each default layout covered.
+        runs-on: [macos-latest, xcode-27]
 
     steps:
       - name: Checkout code
@@ -293,36 +300,39 @@ jobs:
       - name: Build macOS bindings
         run: cargo build --target aarch64-apple-darwin
 
-      # The swiftbuild backend lays its products out differently and is the
-      # default on newer toolchains, so keep that path covered. Release,
-      # because that is the configuration whose symbol visibility differs.
-      - name: Build macOS bindings (swiftbuild backend)
-        env:
-          TAURI_PLUGIN_SWIFT_BUILD_SYSTEM: swiftbuild
+      - name: Build macOS bindings (release)
         run: cargo build --release --target aarch64-apple-darwin
 
       # An rlib build cannot fail on undefined symbols, so assert directly that
-      # the archive we hand the linker still exports every swift-bridge entry
+      # the archive handed to the linker exports every swift-bridge entry
       # point. This is the check for the release symbol-visibility regression.
       - name: Check swift-bridge symbols are exported
         run: |
           set -euo pipefail
-          # Ask the build script which directory it put on the link path rather
-          # than guessing a layout: a stale archive from an earlier backend can
-          # still be on disk without being linked.
-          out=$(ls -t target/aarch64-apple-darwin/release/build/tauri-plugin-iap-*/output | head -1)
+          # Ask cargo which OUT_DIR the build script used, so the right
+          # `output` file is read even when stale ones are on disk.
+          out_dir=$(cargo build --release --target aarch64-apple-darwin --message-format=json \
+            | jq -r 'select(.reason=="build-script-executed" and (.package_id|test("tauri-plugin-iap")))|.out_dir' \
+            | tail -1)
+          # Only if cargo reported no build-script message, fall back to the
+          # newest matching output file.
+          if [ -n "$out_dir" ] && [ -f "$out_dir/../output" ]; then
+            out="$out_dir/../output"
+          else
+            out=$(ls -t target/aarch64-apple-darwin/release/build/tauri-plugin-iap-*/output | head -1)
+          fi
           dir=$(grep -h 'rustc-link-search=native=' "$out" | tail -1 | sed 's/.*native=//')
           lib="$dir/libtauri-plugin-iap.a"
           if [ ! -f "$lib" ]; then echo "no archive at $lib"; exit 1; fi
           echo "checking $lib"
-          nm -gU -arch arm64 "$lib" > exported.txt
+          nm -gU -arch arm64 "$lib" | awk '$2=="T"{print $3}' | sort -u > exported.txt
           grep -rhoE '@_cdecl\("[^"]+"\)' macos/Sources/generated --include='*.swift' \
             | sed 's/@_cdecl("//; s/")//' | sort -u > expected.txt
           count=$(wc -l < expected.txt | tr -d " ")
           if [ "$count" -eq 0 ]; then echo "no @_cdecl entry points found - generator changed?"; exit 1; fi
           missing=0
           while IFS= read -r name; do
-            if ! grep -F " T _$name" exported.txt > /dev/null; then
+            if ! grep -Fx -- "_$name" exported.txt > /dev/null; then
               echo "missing export: $name"; missing=1
             fi
           done < expected.txt
@@ -344,7 +354,7 @@ jobs:
           xcrun xccov view --report --json TestResults.xcresult > coverage.json
 
       - name: Upload coverage to Codecov
-        if: ${{ github.actor != 'dependabot[bot]' }}
+        if: ${{ github.actor != 'dependabot[bot]' && matrix.runs-on == 'macos-latest' }}
         uses: codecov/codecov-action@v7
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
@@ -357,12 +367,12 @@ jobs:
         uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: macos-test-results
+          name: macos-test-results-${{ matrix.runs-on }}
           path: macos/TestResults.xcresult
 
       - name: Upload coverage reports
         uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: macos-coverage
+          name: macos-coverage-${{ matrix.runs-on }}
           path: macos/coverage.json
