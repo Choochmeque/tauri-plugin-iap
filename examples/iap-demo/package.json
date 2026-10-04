@@ -16,7 +16,7 @@
   },
   "devDependencies": {
     "@choochmeque/tauri-macos-xcode": "^0.2.32",
-    "@sveltejs/vite-plugin-svelte": "^7.1.2",
+    "@sveltejs/vite-plugin-svelte": "^7.3.1",
     "@tauri-apps/cli": "^2.12.1",
     "svelte": "^5.56.10",
     "vite": "^8.2.1"
