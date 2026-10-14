@@ -352,7 +352,7 @@ Listens for purchase state changes.
 ### iOS (StoreKit 2)
 - Automatic transaction verification
 - No manual acknowledgment needed
-- Supports introductory offers and promotional offers
+- Supports introductory offers and promotional offers; `getProducts` lists an introductory offer only to users eligible for it
 - Transaction updates are automatically observed
 - Requires iOS 15.0+
 
