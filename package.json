@@ -47,13 +47,13 @@
     "@tauri-apps/api": "^2.11.1"
   },
   "devDependencies": {
-    "@vitest/coverage-v8": "^4.1.9",
-    "@vitest/ui": "^4.1.9",
+    "@vitest/coverage-v8": "^5.1.0",
+    "@vitest/ui": "^5.1.0",
     "happy-dom": "^20.10.5",
     "prettier": "3.9.9",
     "typescript": "^7.0.2",
     "vite": "^8.2.2",
-    "vitest": "^4.1.9"
+    "vitest": "^5.1.0"
   },
   "packageManager": "pnpm@10.9.0+sha512.0486e394640d3c1fb3c9d43d49cf92879ff74f8516959c235308f5a8f62e2e19528a65cdc2a3058f587cde71eba3d5b56327c8c33a97e4c4051ca48a10ca2d5f"
 }
