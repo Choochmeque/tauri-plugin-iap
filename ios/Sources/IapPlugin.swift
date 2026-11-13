@@ -84,8 +84,11 @@ class IapPlugin: Plugin {
                     if let subscription = product.subscription {
                         var subscriptionOffers: [JsonObject] = []
 
-                        // Add introductory offer if available
-                        if let introOffer = subscription.introductoryOffer {
+                        // Add the introductory offer only if this user can still redeem it
+                        // (once per subscription group), as Google Play only lists offers
+                        // the user is eligible for.
+                        if let introOffer = subscription.introductoryOffer,
+                           await subscription.isEligibleForIntroOffer {
                             let offer: JsonObject = [
                                 "offerToken": "",  // iOS doesn't use offer tokens
                                 "basePlanId": "",
