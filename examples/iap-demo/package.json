@@ -11,7 +11,7 @@
     "tauri:macos:dev": "tauri-macos-xcode dev --open"
   },
   "dependencies": {
-    "@tauri-apps/api": "^2.11.1",
+    "@tauri-apps/api": "^2.12.5",
     "tauri-plugin-iap-api": "file:../.."
   },
   "devDependencies": {
