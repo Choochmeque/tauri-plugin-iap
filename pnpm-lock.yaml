@@ -10,7 +10,7 @@ importers:
     dependencies:
       '@tauri-apps/api':
         specifier: ^2.11.1
-        version: 2.12.4
+        version: 2.13.0
     devDependencies:
       '@vitest/coverage-v8':
         specifier: ^5.1.0
@@ -325,8 +325,8 @@ packages:
   '@rolldown/pluginutils@1.0.1':
     resolution: {integrity: sha512-2j9bGt5Jh8hj+vPtgzPtl72j0yRxHAyumoo6TNfAjsLB04UtpSvPbPcDcBMxz7n+9CYB0c1GxQFxYRg2jimqGw==}
 
-  '@tauri-apps/api@2.12.4':
-    resolution: {integrity: sha512-pVmfis+4zT8H0Qhp3xPZx9Ju7kpzvA6rr/PSJPyuwfvucTQ8sVt61NYU9KMkK703UFlYadFmjKA4HhybOtN0gg==}
+  '@tauri-apps/api@2.13.0':
+    resolution: {integrity: sha512-O0uLpOZcFxbHMtkSv8sE6WNTuoUu4pOHtKQn0R6GPAFNJaOgaFa+LrR3emw1jRWA9ebVC8PZUS3Q2p881yFNrA==}
 
   '@types/chai@5.2.3':
     resolution: {integrity: sha512-Mw558oeA9fFbv65/y4mHtXDs9bPnFMZAL/jxdPFUpOHHIXX91mcgEHbS5Lahr+pwZFR8A7GQleRWeI6cGFC2UA==}
@@ -994,7 +994,7 @@ snapshots:
 
   '@rolldown/pluginutils@1.0.1': {}
 
-  '@tauri-apps/api@2.12.4': {}
+  '@tauri-apps/api@2.13.0': {}
 
   '@types/chai@5.2.3':
     dependencies:
