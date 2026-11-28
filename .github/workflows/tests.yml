@@ -309,19 +309,13 @@ jobs:
       - name: Check swift-bridge symbols are exported
         run: |
           set -euo pipefail
-          # Ask cargo which OUT_DIR the build script used, so the right
-          # `output` file is read even when stale ones are on disk.
-          out_dir=$(cargo build --release --target aarch64-apple-darwin --message-format=json \
-            | jq -r 'select(.reason=="build-script-executed" and (.package_id|test("tauri-plugin-iap")))|.out_dir' \
-            | tail -1)
-          # Only if cargo reported no build-script message, fall back to the
-          # newest matching output file.
-          if [ -n "$out_dir" ] && [ -f "$out_dir/../output" ]; then
-            out="$out_dir/../output"
-          else
-            out=$(ls -t target/aarch64-apple-darwin/release/build/tauri-plugin-iap-*/output | head -1)
-          fi
-          dir=$(grep -h 'rustc-link-search=native=' "$out" | tail -1 | sed 's/.*native=//')
+          # Ask cargo for the link search path the build script emitted. The
+          # JSON message is stable across cargo's build-dir layouts, unlike
+          # the build script's on-disk output file.
+          dir=$(cargo build --release --target aarch64-apple-darwin --message-format=json \
+            | jq -r 'select(.reason=="build-script-executed" and (.package_id|test("tauri-plugin-iap")))|.linked_paths[]' \
+            | sed -n 's/^native=//p' | tail -1)
+          if [ -z "$dir" ]; then echo "cargo reported no native link search path"; exit 1; fi
           lib="$dir/libtauri-plugin-iap.a"
           if [ ! -f "$lib" ]; then echo "no archive at $lib"; exit 1; fi
           echo "checking $lib"
